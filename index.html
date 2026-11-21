@@ -1,0 +1,2511 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hacim Ölçme Birimleri Atölyesi • S.144-146</title>
+    <style>
+        :root {
+            --sky-top: #0f4c75;
+            --sky-mid: #1b7ea1;
+            --sky-bot: #76c7e4;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --dark: #1b2a38;
+            --primary: #7c3aed;
+            --primary-dark: #5b21b6;
+            --orange: #f59e0b;
+            --orange-dark: #b45309;
+            --teal: #0d9488;
+            --teal-dark: #115e59;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --m3-col: #38bdf8;
+            --dm3-col: #4ade80;
+            --cm3-col: #facc15;
+            --mm3-col: #fb923c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100dvh;
+            overflow: hidden;
+            background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bot) 85%, #d9edf7 100%);
+            color: var(--dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* ARKA PLAN TEMA DEKORU (BULUTLAR + ŞANTİYE SİLÜETİ + ZEMİN) */
+        .scene-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.22);
+            border-radius: 50px;
+            animation: drift linear infinite;
+        }
+        .cloud.c1 { width: 140px; height: 42px; top: 8%; left: -160px; animation-duration: 38s; }
+        .cloud.c2 { width: 190px; height: 52px; top: 18%; left: -210px; animation-duration: 52s; animation-delay: -18s; }
+        .cloud.c3 { width: 120px; height: 36px; top: 12%; left: -140px; animation-duration: 44s; animation-delay: -30s; }
+        @keyframes drift {
+            from { transform: translateX(0); }
+            to { transform: translateX(calc(100vw + 260px)); }
+        }
+        .ground-strip {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 54px;
+            background: repeating-linear-gradient(
+                -45deg,
+                #f59e0b 0px, #f59e0b 14px,
+                #1e293b 14px, #1e293b 28px
+            );
+            opacity: 0.14;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        /* ÜST HUD ÇUBUĞU */
+        .top-hud {
+            width: 100%;
+            max-width: 1160px;
+            padding: 6px 12px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            z-index: 15;
+            flex-shrink: 0;
+        }
+
+        .creator-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 2px dashed var(--orange);
+            border-radius: 20px;
+            padding: 3px 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+        }
+        .creator-name { font-weight: 900; font-size: clamp(10.5px, 1.4vw, 13px); color: var(--dark); }
+        .creator-insta {
+            background: linear-gradient(90deg, #f97316, #ea580c);
+            color: #fff;
+            text-decoration: none;
+            font-size: clamp(9.5px, 1.2vw, 11px);
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hud-chip {
+            background: rgba(15, 23, 42, 0.85);
+            color: #fff;
+            border: 2px solid #7dd3fc;
+            border-radius: 14px;
+            padding: 3px 10px;
+            font-size: clamp(11px, 1.35vw, 13px);
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+        }
+        .hud-chip span { color: #fde047; }
+        .btn-sound {
+            background: rgba(15, 23, 42, 0.85);
+            color: #fff;
+            border: 2px solid #7dd3fc;
+            border-radius: 12px;
+            width: 31px;
+            height: 31px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 3 SAYFA / BÖLÜM SEKMELERİ (SERBEST GEÇİŞ) */
+        .page-tabs {
+            width: calc(100% - 14px);
+            max-width: 1160px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 7px;
+            margin-bottom: 5px;
+            z-index: 15;
+            flex-shrink: 0;
+        }
+        .page-tab {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2.5px solid #cbd5e1;
+            border-radius: 13px;
+            padding: 6px 8px;
+            font-size: clamp(10.5px, 1.4vw, 14px);
+            font-weight: 900;
+            color: #1e293b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 3px 0 rgba(15, 23, 42, 0.25);
+            transition: all 0.14s;
+        }
+        .page-tab.active {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
+            border-color: #fef08a;
+            box-shadow: 0 3px 0 #92400e;
+        }
+        .tab-pill {
+            background: rgba(0, 0, 0, 0.14);
+            padding: 1px 7px;
+            border-radius: 9px;
+            font-size: 10.5px;
+            white-space: nowrap;
+        }
+
+        /* ANA OYUN SAHNESİ */
+        #stage-shell {
+            width: calc(100% - 14px);
+            max-width: 1160px;
+            flex: 1 1 auto;
+            min-height: 0;
+            margin-bottom: 7px;
+            background: var(--panel-bg);
+            border: 3px solid #38bdf8;
+            border-radius: 18px;
+            box-shadow: 0 12px 32px rgba(7, 32, 54, 0.32);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: clamp(24px, 5vw, 58px);
+            font-weight: 900;
+            color: rgba(15, 76, 117, 0.045);
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
+        }
+
+        .stage-head {
+            background: linear-gradient(90deg, #0f172a, #1e3a5f);
+            color: #fff;
+            padding: 7px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            border-bottom: 3px solid var(--orange);
+            flex-shrink: 0;
+            z-index: 2;
+        }
+        .head-title {
+            font-size: clamp(13px, 1.9vw, 18px);
+            font-weight: 900;
+            color: #fde047;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .head-page-tag {
+            background: #ec4899;
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 9px;
+            border-radius: 10px;
+            font-weight: 900;
+        }
+        .head-step-nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-mini {
+            background: rgba(255, 255, 255, 0.16);
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
+            border-radius: 9px;
+            padding: 3px 10px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .nav-mini:disabled { opacity: 0.35; cursor: default; }
+
+        .progress-track {
+            width: 100%;
+            height: 5px;
+            background: #e2e8f0;
+            flex-shrink: 0;
+            z-index: 2;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #10b981, #f59e0b);
+            transition: width 0.3s ease;
+        }
+
+        /* İÇERİK GÖVDESİ */
+        .stage-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            padding: clamp(8px, 1.5vh, 14px) clamp(10px, 2vw, 18px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        /* SORU & SENARYO KARTI */
+        .scenario-card {
+            width: 100%;
+            max-width: 980px;
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 2px solid #93c5fd;
+            border-left: 6px solid #2563eb;
+            border-radius: 14px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
+        }
+        .scenario-text {
+            font-size: clamp(13px, 1.65vw, 16px);
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.45;
+        }
+        .scenario-text b { color: #1d4ed8; font-weight: 900; }
+
+        /* ELİF & METİN SAHNESİ (S.144) */
+        .comic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+        .comic-panel {
+            background: #fff;
+            border: 2.5px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .comic-svg { width: clamp(68px, 9vw, 96px); height: auto; flex-shrink: 0; }
+        .comic-bubble {
+            font-size: clamp(11.5px, 1.35vw, 13.5px);
+            font-weight: 700;
+            color: #334155;
+            line-height: 1.38;
+        }
+        .comic-bubble b { color: #b45309; }
+
+        /* SEÇENEK BUTONLARI (GENEL QUİZ) */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 10px;
+            width: 100%;
+            max-width: 980px;
+        }
+        .opt-btn {
+            background: #ffffff;
+            border: 3px solid var(--primary);
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: clamp(13px, 1.6vw, 16px);
+            font-weight: 800;
+            color: var(--primary-dark);
+            cursor: pointer;
+            box-shadow: 0 5px 0 var(--primary);
+            transition: all 0.12s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .opt-btn:hover { background: #f5f3ff; transform: translateY(-2px); }
+        .opt-btn:active { transform: translateY(4px); box-shadow: none; }
+        .opt-btn.correct { background: var(--success); border-color: #15803d; color: #fff; box-shadow: 0 5px 0 #15803d; }
+        .opt-btn.wrong { background: var(--danger); border-color: #b91c1c; color: #fff; box-shadow: 0 5px 0 #b91c1c; animation: shake 0.35s; }
+        .opt-key {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #ede9fe;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+        .opt-btn.correct .opt-key, .opt-btn.wrong .opt-key { background: rgba(255,255,255,0.25); color: #fff; }
+
+        /* SAYFA 144 TABLO: m³ vs LİTRE SEÇİMİ */
+        .unit-table {
+            width: 100%;
+            max-width: 980px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .unit-row-card {
+            background: #fff;
+            border: 2.5px solid #cbd5e1;
+            border-radius: 14px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+        .unit-row-card.solved {
+            border-color: var(--success);
+            background: #f0fdf4;
+        }
+        .unit-row-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .unit-emoji { font-size: clamp(26px, 3.2vw, 34px); }
+        .unit-label { font-size: clamp(12.5px, 1.5vw, 15px); font-weight: 800; color: #1e293b; line-height: 1.25; }
+        .unit-btns { display: flex; gap: 6px; flex-shrink: 0; }
+        .u-choice {
+            padding: 7px 12px;
+            border-radius: 10px;
+            border: 2px solid #0284c7;
+            background: #f0f9ff;
+            color: #0369a1;
+            font-weight: 900;
+            font-size: clamp(12px, 1.4vw, 14px);
+            cursor: pointer;
+            box-shadow: 0 3px 0 #0284c7;
+            transition: all 0.12s;
+        }
+        .u-choice:active { transform: translateY(2px); box-shadow: none; }
+        .u-choice.picked-ok { background: var(--success); border-color: #15803d; color: #fff; box-shadow: 0 3px 0 #15803d; pointer-events: none; }
+        .u-choice.picked-err { background: var(--danger); border-color: #b91c1c; color: #fff; animation: shake 0.35s; }
+
+        /* SAYFA 145: KARGO KAMYONU 3D İZOMETRİK KOLİ YÜKLEME */
+        .truck-workspace {
+            width: 100%;
+            max-width: 980px;
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+        .truck-canvas-box {
+            background: linear-gradient(180deg, #e0f2fe 0%, #bae6fd 65%, #94a3b8 65%, #64748b 100%);
+            border: 3px solid #0284c7;
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            box-shadow: inset 0 0 20px rgba(2, 132, 199, 0.15);
+        }
+        .truck-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        .btn-action {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: clamp(12.5px, 1.5vw, 15px);
+            font-weight: 900;
+            color: #fff;
+            cursor: pointer;
+            background: linear-gradient(180deg, #f59e0b, #d97706);
+            box-shadow: 0 4px 0 #92400e;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.1s;
+        }
+        .btn-action:active { transform: translateY(3px); box-shadow: none; }
+        .btn-action:disabled { opacity: 0.45; cursor: default; transform: none; }
+        .btn-action.teal { background: linear-gradient(180deg, #14b8a6, #0d9488); box-shadow: 0 4px 0 #115e59; }
+        .btn-action.purple { background: linear-gradient(180deg, #8b5cf6, #7c3aed); box-shadow: 0 4px 0 #5b21b6; }
+        .btn-action.gray { background: linear-gradient(180deg, #64748b, #475569); box-shadow: 0 4px 0 #1e293b; }
+
+        .truck-info-panel {
+            background: #fff;
+            border: 2.5px solid #cbd5e1;
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+        .metric-box {
+            background: linear-gradient(90deg, #0f172a, #1e3a5f);
+            color: #fde047;
+            border: 2px solid #38bdf8;
+            border-radius: 12px;
+            padding: 9px 12px;
+            text-align: center;
+            font-size: clamp(14px, 1.8vw, 18px);
+            font-weight: 900;
+        }
+        .koli-phase-pill {
+            background: #fef3c7;
+            border: 2px dashed #f59e0b;
+            color: #92400e;
+            border-radius: 10px;
+            padding: 6px 10px;
+            text-align: center;
+            font-size: clamp(12px, 1.4vw, 14px);
+            font-weight: 900;
+        }
+        .koli-quiz-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 980px;
+            animation: popIn 0.35s ease;
+        }
+        .koli-quiz-section.visible { display: flex; }
+
+        .prism-meter-wrap {
+            width: 100%;
+            height: 16px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #94a3b8;
+        }
+        .prism-meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #0ea5e9, #10b981);
+            transition: width 0.28s ease;
+        }
+
+        /* SAYFA 146 SORU 3: SEBZE YATAĞI VE TIKLANABİLİR TOPRAK PAKETİ */
+        .garden-stage-grid {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .soil-bag-btn {
+            background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+            border: 3px solid #92400e;
+            border-radius: 16px;
+            padding: 8px 10px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 5px 0 #78350f, 0 8px 16px rgba(120, 53, 15, 0.22);
+            transition: transform 0.14s ease, box-shadow 0.14s ease;
+            min-width: 118px;
+        }
+        .soil-bag-btn:hover { transform: translateY(-2px) scale(1.03); }
+        .soil-bag-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #78350f; }
+        .soil-bag-btn.pouring svg { animation: bagTiltPour 0.36s ease; }
+        .soil-bag-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+        .soil-bag-cta {
+            background: #15803d;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 3px 9px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        @keyframes bagTiltPour {
+            0% { transform: rotate(0deg) scale(1); }
+            45% { transform: rotate(-28deg) translate(-6px, -6px) scale(1.06); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .sprout-group {
+            transform-box: fill-box;
+            transform-origin: bottom center;
+            animation: sproutGrow 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes sproutGrow {
+            0% { transform: scaleY(0.1); opacity: 0; }
+            100% { transform: scaleY(1); opacity: 1; }
+        }
+        .soil-drop-anim {
+            animation: soilFall 0.38s ease-out forwards;
+        }
+        @keyframes soilFall {
+            0% { transform: translateY(-26px); opacity: 1; }
+            100% { transform: translateY(10px); opacity: 0; }
+        }
+
+        /* SAYFA 146: CANLI İNTERAKTİF ORİJİNAL 3D HACİM MERDİVENİ */
+        .ladder-workspace {
+            width: 100%;
+            max-width: 980px;
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 12px;
+            align-items: stretch;
+        }
+        .ladder-stage {
+            background: linear-gradient(145deg, #faf5ee 0%, #f1e7d8 100%);
+            border: 3px solid #d4a373;
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: inset 0 0 18px rgba(180, 130, 80, 0.14);
+        }
+        .ladder-svg {
+            width: 100%;
+            max-width: 410px;
+            height: auto;
+            display: block;
+            overflow: visible;
+        }
+        .iso-step {
+            cursor: pointer;
+            transition: filter 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+        }
+        .iso-step.dimmed {
+            opacity: 0.72;
+        }
+        .iso-step.visited {
+            opacity: 0.94;
+        }
+        .iso-step.lit {
+            opacity: 1;
+            filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.95)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.95));
+            animation: stepPulseGlow 1.15s ease-in-out infinite alternate;
+        }
+        .iso-step.lit-reached {
+            opacity: 1;
+            filter: drop-shadow(0 0 14px rgba(34, 197, 94, 0.95)) drop-shadow(0 0 5px rgba(255, 255, 255, 0.95));
+            animation: stepPulseGlow 0.9s ease-in-out infinite alternate;
+        }
+        .iso-step-highlight {
+            pointer-events: none;
+            animation: stepFlash 0.55s ease-out;
+        }
+        .iso-target-ring {
+            stroke: #e11d48;
+            stroke-width: 3;
+            stroke-dasharray: 6 4;
+            fill: none;
+            animation: targetDash 1.2s linear infinite;
+        }
+        .iso-arrow-group {
+            transition: opacity 0.25s ease;
+        }
+        .iso-arrow-group.idle {
+            opacity: 0.3;
+        }
+        .iso-arrow-group.traveled {
+            opacity: 0.92;
+        }
+        .iso-arrow-group.anim-active {
+            opacity: 1;
+            filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.7));
+        }
+        .iso-arrow-group.anim-active.up-arrow {
+            filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.7));
+        }
+        .iso-arrow-path.animate-draw {
+            stroke-dasharray: 120;
+            stroke-dashoffset: 120;
+            animation: drawCurveArrow 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .iso-arrow-head.animate-pop {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: popArrowHead 0.52s ease forwards;
+        }
+        .iso-arrow-label.animate-pop {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: popArrowLabel 0.52s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes stepPulseGlow {
+            0% { filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.85)) brightness(1.03); }
+            100% { filter: drop-shadow(0 0 18px rgba(250, 204, 21, 1)) brightness(1.14); }
+        }
+        @keyframes stepFlash {
+            0% { opacity: 0.92; }
+            100% { opacity: 0; }
+        }
+        @keyframes targetDash {
+            to { stroke-dashoffset: -20; }
+        }
+        @keyframes drawCurveArrow {
+            0% { stroke-dashoffset: 120; }
+            100% { stroke-dashoffset: 0; }
+        }
+        @keyframes popArrowHead {
+            0%, 60% { opacity: 0; transform: scale(0.3); }
+            100% { opacity: 1; transform: scale(1.15); }
+        }
+        @keyframes popArrowLabel {
+            0% { transform: scale(0.8); }
+            55% { transform: scale(1.28); }
+            100% { transform: scale(1.08); }
+        }
+
+        .converter-panel {
+            background: #fff;
+            border: 2.5px solid #cbd5e1;
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .conv-question {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: clamp(16px, 2.3vw, 22px);
+            font-weight: 900;
+            color: #78350f;
+        }
+        .conv-live-display {
+            background: #0f172a;
+            color: #38bdf8;
+            border-radius: 12px;
+            padding: 12px 10px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(18px, 2.5vw, 26px);
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            border: 2px solid #38bdf8;
+            word-break: break-all;
+        }
+        .conv-live-display.reached {
+            background: #14532d;
+            color: #86efac;
+            border-color: #4ade80;
+            animation: popIn 0.35s ease;
+        }
+        .conv-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .btn-step-down {
+            background: linear-gradient(180deg, #ef4444, #dc2626);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 11px 8px;
+            font-size: clamp(12.5px, 1.5vw, 15px);
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #991b1b;
+        }
+        .btn-step-up {
+            background: linear-gradient(180deg, #3b82f6, #2563eb);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 11px 8px;
+            font-size: clamp(12.5px, 1.5vw, 15px);
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1e40af;
+        }
+        .btn-step-down:active, .btn-step-up:active { transform: translateY(3px); box-shadow: none; }
+        .btn-step-down:disabled, .btn-step-up:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+        /* KONTROLLÜ ALT AKSİYON ÇUBUĞU (BİLGİ KUTUSU + SONRAKİ ADIM) */
+        .post-bar {
+            display: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-top: 4px;
+            animation: popIn 0.28s ease;
+        }
+        .post-bar.visible { display: flex; }
+
+        /* BİLGİ KUTUSU MODALI (KULLANICI KONTROLLÜ) */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 150;
+            padding: 16px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-card {
+            background: #fffbeb;
+            border: 4px dashed #f59e0b;
+            border-radius: 22px;
+            padding: 22px 20px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+            animation: popIn 0.3s ease;
+        }
+        .modal-card h3 { color: #b45309; font-size: 22px; font-weight: 900; margin-bottom: 10px; }
+        .modal-card p { color: #1e293b; font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 16px; }
+        .modal-btns { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            top: 52px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 160;
+            background: #0f172a;
+            border: 2.5px solid #fde047;
+            color: #fff;
+            padding: 7px 18px;
+            border-radius: 24px;
+            font-size: clamp(12px, 1.5vw, 14px);
+            font-weight: 800;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+            transition: all 0.25s ease;
+            text-align: center;
+            max-width: 90vw;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #toast.ok { background: #15803d; border-color: #86efac; }
+        #toast.err { background: #b91c1c; border-color: #fca5a5; }
+
+        @keyframes popIn { 0% { transform: scale(0.86); opacity: 0.4; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+        /* MOBİL UYUM */
+        @media (max-width: 780px) {
+            .comic-grid, .unit-table, .truck-workspace, .ladder-workspace { grid-template-columns: 1fr; }
+            .page-tab span.tab-txt { display: none; }
+            .ladder-svg { max-width: 340px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ARKA PLAN BULUTLARI VE ŞANTİYE ŞERİDİ -->
+    <div class="scene-bg">
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="cloud c3"></div>
+    </div>
+    <div class="ground-strip"></div>
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- ÜST HUD -->
+    <div class="top-hud">
+        <div class="creator-pill">
+            <span class="creator-name">Bekir DEMİREL</span>
+            <a class="creator-insta" href="https://instagram.com/matejital_mt25" target="_blank" rel="noopener">@matejital_mt25 ✔</a>
+        </div>
+        <div class="hud-right">
+            <div class="hud-chip">🏆 Adım: <span id="hud-step">1/13</span></div>
+            <div class="hud-chip">⭐ Puan: <span id="hud-score">0</span></div>
+            <button class="btn-sound" id="sound-btn" title="Sesi Aç/Kapat">🔊</button>
+        </div>
+    </div>
+
+    <!-- 3 SAYFA SEKMESİ (SAYFA 144 • 145 • 146) -->
+    <div class="page-tabs">
+        <button class="page-tab active" id="tab-p144" onclick="jumpToStep(0)">
+            🏗️ <span class="tab-txt">Uygun Birim</span> <span class="tab-pill">S.144</span>
+        </button>
+        <button class="page-tab" id="tab-p145" onclick="jumpToStep(2)">
+            🚚 <span class="tab-txt">Kargo Kamyonu</span> <span class="tab-pill">S.145</span>
+        </button>
+        <button class="page-tab" id="tab-p146" onclick="jumpToStep(6)">
+            🪜 <span class="tab-txt">Merdiven & Uygulayalım 3</span> <span class="tab-pill">S.146</span>
+        </button>
+    </div>
+
+    <!-- ANA OYUN SAHNESİ -->
+    <div id="stage-shell">
+        <div class="watermark">@matejital_mt25 • Bekir DEMİREL</div>
+
+        <div class="stage-head">
+            <div class="head-title">
+                <span id="stage-title-text">Hacim Ölçme Birimleri</span>
+                <span class="head-page-tag" id="stage-page-tag">Sayfa 144</span>
+            </div>
+            <div class="head-step-nav">
+                <button class="nav-mini" id="btn-prev-step" onclick="prevStep()">◀️ Önceki</button>
+                <button class="nav-mini" id="btn-next-step" onclick="nextStep()">Sonraki ▶️</button>
+            </div>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+
+        <div class="stage-body" id="stage-body"></div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast">Bildirim</div>
+
+    <!-- KONTROLLÜ BİLGİ KUTUSU MODALI -->
+    <div class="modal-overlay" id="info-modal">
+        <div class="modal-card">
+            <h3>💡 Bilgi Kutusu</h3>
+            <p id="info-modal-text">...</p>
+            <div class="modal-btns">
+                <button class="btn-action gray" onclick="closeInfoModal()">Kapat ✖</button>
+                <button class="btn-action teal" id="info-modal-next" onclick="closeInfoModal(); nextStep();">Sonraki Soru ➡️</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // NEŞELİ SES MOTORU (WEB AUDIO API)
+        // ==========================================
+        let audioCtx = null;
+        let soundOn = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        document.getElementById('sound-btn').addEventListener('click', () => {
+            soundOn = !soundOn;
+            document.getElementById('sound-btn').innerText = soundOn ? '🔊' : '🔇';
+        });
+
+        function playSound(type) {
+            if (!soundOn) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                if (type === 'fanfare') {
+                    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(f, now + i * 0.075);
+                        g.gain.setValueAtTime(0.22, now + i * 0.075);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.075 + 0.25);
+                        o.start(now + i * 0.075); o.stop(now + i * 0.075 + 0.26);
+                    });
+                    return;
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                if (type === 'tick') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(540, now); osc.frequency.exponentialRampToValueAtTime(840, now + 0.05);
+                    gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                    osc.start(now); osc.stop(now + 0.065);
+                } else if (type === 'stepDown') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(620, now); osc.frequency.exponentialRampToValueAtTime(420, now + 0.11);
+                    gain.gain.setValueAtTime(0.16, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now); osc.stop(now + 0.13);
+                } else if (type === 'stepUp') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(420, now); osc.frequency.exponentialRampToValueAtTime(760, now + 0.11);
+                    gain.gain.setValueAtTime(0.16, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now); osc.stop(now + 0.13);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(783.99, now + 0.08);
+                    gain.gain.setValueAtTime(0.22, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.26);
+                    osc.start(now); osc.stop(now + 0.27);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(210, now); osc.frequency.linearRampToValueAtTime(130, now + 0.24);
+                    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.26);
+                    osc.start(now); osc.stop(now + 0.27);
+                }
+            } catch (e) {}
+        }
+
+        // ==========================================
+        // SAYI FORMATLAMA (TÜRKÇE BİÇİM)
+        // ==========================================
+        function formatNumberTR(val) {
+            // Çok küçük ondalıkları bilimsel gösterim olmadan düzgün yaz
+            if (Math.abs(val) < 1 && val !== 0) {
+                let s = val.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
+                return s.replace('.', ',');
+            }
+            const rounded = Math.round(val * 1e9) / 1e9;
+            const parts = String(rounded).split('.');
+            const intFormatted = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            return parts[1] ? `${intFormatted},${parts[1]}` : intFormatted;
+        }
+
+        // ==========================================
+        // TÜM ADIMLAR VERİTABANI (SAYFA 144 -> 145 -> 146 EKSİKSİZ)
+        // ==========================================
+        const UNITS = ['m³', 'dm³', 'cm³', 'mm³'];
+        const UNIT_NAMES = ['Metreküp (m³)', 'Desimetreküp (dm³)', 'Santimetreküp (cm³)', 'Milimetreküp (mm³)'];
+
+        const STEPS = [
+            // --- SAYFA 144: DÜŞÜN-TARTIŞ-AÇIKLA 10 ---
+            {
+                page: 'Sayfa 144',
+                tab: 'p144',
+                type: 's144_a',
+                title: 'Düşün-Tartış-Açıkla 10 • Soru (a)',
+                note: `Harika! Büyük hacimler (kum, beton, konteyner) için <b>metreküp (m³)</b>, günlük sıvı hacimleri (su, meyve suyu, zeytinyağı) için <b>litre (L)</b> kullanmak hem okumayı hem hesaplamayı çok kolaylaştırır!`
+            },
+            {
+                page: 'Sayfa 144',
+                tab: 'p144',
+                type: 's144_b',
+                title: 'Düşün-Tartış-Açıkla 10 • Soru (b)',
+                rows: [
+                    { emoji: '🫒', text: 'Marketten Alınan Bir Şişe Zeytinyağı', ans: 'L', reason: 'Şişedeki sıvı yağ günlük ölçekte Litre (L) ile ölçülür.' },
+                    { emoji: '⛽', text: 'Arabanın Deposuna Alınan Benzin', ans: 'L', reason: 'Yakıt depoları ve akaryakıt istasyonlarında Litre (L) kullanılır.' },
+                    { emoji: '📦', text: 'Bir Kargo Konteynerinin Kapasitesi', ans: 'm³', reason: 'Çok büyük depo ve konteyner hacimleri Metreküp (m³) ile ölçülür.' },
+                    { emoji: '🎈', text: 'Bir Sıcak Hava Balonunun İçindeki Hava', ans: 'm³', reason: 'Balon içindeki dev hava hacmi Metreküp (m³) ile ifade edilir.' }
+                ],
+                note: `Süper! Zeytinyağı ve benzin <b>Litre (L)</b>; kargo konteyneri ve sıcak hava balonu <b>Metreküp (m³)</b> ile ölçülür.`
+            },
+
+            // --- SAYFA 145: DÜŞÜN-TARTIŞ-AÇIKLA 11 ---
+            {
+                page: 'Sayfa 145',
+                tab: 'p145',
+                type: 's145_truck',
+                title: 'Düşün-Tartış-Açıkla 11 • Soru 1 (Kamyon Kasası)',
+                note: `Harika! Kamyonun kasasına tabanda <b>3 × 2 = 6 koli</b>, 2 katta ise toplam <b>3 × 2 × 2 = 12 adet koli</b> sığdı! Yani kamyon kasasının hacmi <b>12 m³</b>'tür.`
+            },
+            {
+                page: 'Sayfa 145',
+                tab: 'p145',
+                type: 's145_koli',
+                title: 'Düşün-Tartış-Açıkla 11 • Soru 2 (Kutu Sayısı)',
+                opts: [
+                    { k: 'A', t: '120 adet kutu' },
+                    { k: 'B', t: '1 200 adet kutu' },
+                    { k: 'C', t: '12 000 adet kutu' },
+                    { k: 'D', t: '120 000 adet kutu' }
+                ],
+                ans: 'C',
+                note: `Harika! Tabanda <b>10 × 10 = 100 kutu</b>, 10 katta ise <b>100 × 10 = 1 000 kutu</b> sığdığını canlı gördün. 12 kolide toplam <b>12 × 1 000 = 12 000 adet</b> kutu bulunur!`
+            },
+            {
+                page: 'Sayfa 145',
+                tab: 'p145',
+                type: 'quiz',
+                title: 'Düşün-Tartış-Açıkla 11 • Soru 3 (m³ ile dm³ İlişkisi)',
+                scenario: `🚚 Kamyon kasasının hacmini:<br>• 1 m'lik kolilerle <b>12 m³</b>,<br>• 1 dm'lik kutularla <b>12 000 dm³</b> bulduk!<br><br>Bu sonuçları karşılaştırdığımızda <b>1 m³</b> ile <b>dm³</b> arasındaki ilişki nedir?`,
+                opts: [
+                    { k: 'A', t: '1 m³ = 10 dm³' },
+                    { k: 'B', t: '1 m³ = 100 dm³' },
+                    { k: 'C', t: '1 m³ = 1 000 dm³' }
+                ],
+                ans: 'C',
+                note: `Tebrikler! Hacim ölçü birimleri uzunluk gibi 10'ar değil, alan gibi 100'er değil, <b>1000'er 1000'er</b> büyüyüp küçülür! <b>1 m³ = 1000 dm³</b>.`
+            },
+            {
+                page: 'Sayfa 145',
+                tab: 'p145',
+                type: 'quiz',
+                title: 'Düşün-Tartış-Açıkla 11 • Soru 4 (m³ → cm³ ve mm³)',
+                scenario: `🪜 Her bir basamak aşağı indiğimizde hacim ölçüsü <b>1000 ile çarpılır</b> (m³ → dm³ → cm³ → mm³).<br><br>Buna göre <b>1 m³</b>'ün <b>cm³</b> ve <b>mm³</b> cinsinden eşiti hangisidir?`,
+                opts: [
+                    { k: 'A', t: '1 m³ = 1 000 000 cm³  ve  1 m³ = 1 000 000 000 mm³' },
+                    { k: 'B', t: '1 m³ = 10 000 cm³  ve  1 m³ = 1 000 000 mm³' },
+                    { k: 'C', t: '1 m³ = 100 000 cm³  ve  1 m³ = 10 000 000 mm³' }
+                ],
+                ans: 'A',
+                note: `Muhteşem! m³'ten cm³'e 2 basamak (1000 × 1000 = <b>1 000 000</b>), mm³'e 3 basamak (<b>1 000 000 000</b>) vardır. Şimdi Sayfa 146'daki merdiven atölyesine geçelim!`
+            },
+
+            // --- SAYFA 146: BİLGİ KUTUSU & UYGULAYALIM 3 ---
+            {
+                page: 'Sayfa 146',
+                tab: 'p146',
+                type: 'ladder',
+                title: 'Uygulayalım 3 • Soru 1a (15 m³ = ? cm³)',
+                startVal: 15,
+                startIdx: 0, // m³
+                targetIdx: 2, // cm³
+                note: `Harika! m³'ten cm³'e <b>2 basamak aşağı</b> indik (× 1000 × 1000). Sonuç: <b>15 000 000 cm³</b>!`
+            },
+            {
+                page: 'Sayfa 146',
+                tab: 'p146',
+                type: 'ladder',
+                title: 'Uygulayalım 3 • Soru 1b (1 700 000 000 cm³ = ? m³)',
+                startVal: 1700000000,
+                startIdx: 2, // cm³
+                targetIdx: 0, // m³
+                note: `Harika! cm³'ten m³'e <b>2 basamak yukarı</b> çıktık (÷ 1000 ÷ 1000). 6 sıfır silindi: <b>1 700 m³</b>!`
+            },
+            {
+                page: 'Sayfa 146',
+                tab: 'p146',
+                type: 'ladder',
+                title: 'Uygulayalım 3 • Soru 1c (130 dm³ = ? cm³)',
+                startVal: 130,
+                startIdx: 1, // dm³
+                targetIdx: 2, // cm³
+                note: `Doğru! dm³'ten cm³'e <b>1 basamak aşağı</b> indik (× 1000). Sonuç: <b>130 000 cm³</b>!`
+            },
+            {
+                page: 'Sayfa 146',
+                tab: 'p146',
+                type: 'ladder',
+                title: 'Uygulayalım 3 • Soru 1d (2 dm³ = ? mm³)',
+                startVal: 2,
+                startIdx: 1, // dm³
+                targetIdx: 3, // mm³
+                note: `Mükemmel! dm³'ten mm³'e <b>2 basamak aşağı</b> indik (× 1000 × 1000). Sonuç: <b>2 000 000 mm³</b>!`
+            },
+            {
+                page: 'Sayfa 146',
+                tab: 'p146',
+                type: 'ladder',
+                title: 'Uygulayalım 3 • Soru 1e (0,24 dm³ = ? m³)',
+                startVal: 0.24,
+                startIdx: 1, // dm³
+                targetIdx: 0, // m³
+                note: `Harika! dm³'ten m³'e <b>1 basamak yukarı</b> çıktık (÷ 1000). Virgül 3 basamak sola kaydı: <b>0,00024 m³</b>!`
+            },
+            {
+                page: 'Sayfa 146',
+                tab: 'p146',
+                type: 's146_prism',
+                title: 'Uygulayalım 3 • Soru 2 (Kare Prizmanın Yüksekliği)',
+                scenario: `📐 Bir kare prizmanın taban ayrıtlarının uzunlukları <b>20 cm</b>'dir. Bu prizmanın hacmi <b>2 dm³</b> olduğuna göre prizmanın <b>yüksekliği</b> kaç <b>cm</b>'dir?<br><i>💡 Önce <b>2 dm³ = 2 000 cm³</b> dönüşümünü hatırla! Taban alanı <b>20 × 20 = 400 cm²</b> olduğuna göre, prizmaya tıklayarak <b>1 cm'lik (+400 cm³) katmanları</b> üst üste ekle!</i>`,
+                opts: [
+                    { k: 'A', t: '4 cm' },
+                    { k: 'B', t: '5 cm' },
+                    { k: 'C', t: '10 cm' },
+                    { k: 'D', t: '50 cm' }
+                ],
+                ans: 'B',
+                note: `Süper! Her 1 cm yüksekliğindeki katman <b>20 × 20 × 1 = 400 cm³</b> hacim kapladı. <b>2 000 cm³ (2 dm³)</b> hacme tam <b>5 katmanda</b> ulaştık → Yükseklik = <b>5 cm</b>!`
+            },
+            {
+                page: 'Sayfa 146',
+                tab: 'p146',
+                type: 's146_garden',
+                title: 'Uygulayalım 3 • Soru 3 (Peyzaj Mimarı & Sebze Yatağı)',
+                scenario: `🌱 Bir peyzaj mimarı, uzunluğu <b>2 m</b>, genişliği <b>1,5 m</b>, derinliği <b>40 cm</b> olan dikdörtgenler prizması şeklinde bir sebze yatağı yaptıracak ve her biri <b>60 dm³</b> olan özel toprak paketleriyle tamamen dolduracaktır.<br><i>💡 Tüm ayrıtları <b>dm</b>'ye çevir: 2 m = <b>20 dm</b>, 1,5 m = <b>15 dm</b>, 40 cm = <b>4 dm</b> → Hacim = 20 × 15 × 4 = <b>1 200 dm³</b>! <b>Toprak paketine tıklayarak</b> sebze yatağını doldur!</i>`,
+                opts: [
+                    { k: 'A', t: '12 paket' },
+                    { k: 'B', t: '15 paket' },
+                    { k: 'C', t: '20 paket' },
+                    { k: 'D', t: '24 paket' }
+                ],
+                ans: 'C',
+                note: `🏆 Muhteşem! Sebze yatağının hacmi <b>20 × 15 × 4 = 1 200 dm³</b>. Her paket <b>60 dm³</b> olduğuna göre 1 200 ÷ 60 = <b>20 paket</b> toprak gerekir! Sayfa 144, 145 ve 146'daki tüm soruları eksiksiz tamamladın!`
+            }
+        ];
+
+        // ==========================================
+        // OYUN DURUMU
+        // ==========================================
+        let currentIdx = 0;
+        let score = 0;
+        let stepSolved = Array(STEPS.length).fill(false);
+
+        // Geçici etkileşim durumları
+        let s144bSolvedCount = 0;
+        let truckBoxes = 0;
+        let koliBaseRows = 0; // 0..10 (Taban katında 10'arlı sıralar)
+        let koliLayers = 0;   // 0..10 (Taban dolunca 1..10 katlar)
+        let prismLayers = 0;  // 0..5 (Her 1 cm katman = 400 cm³, hedef 5 cm = 2000 cm³)
+        let gardenBags = 0;   // 0..20 (Her toprak paketi = 60 dm³, hedef 20 paket = 1200 dm³)
+        let gardenJustPoured = false;
+        let ladderCurrentIdx = 0;
+        let ladderCurrentVal = 0;
+        let ladderVisited = [];
+        let ladderTraveledArrows = []; // { dir: 1|-1, edgeIdx: 0|1|2 }
+        let ladderLastArrow = null;    // Son tıklanan okun animasyonu için
+        let ladderJustLitIdx = -1;     // Yeni yanan basamak parıltısı için
+        let currentModalNote = '';
+
+        function updateHUD() {
+            document.getElementById('hud-step').innerText = `${currentIdx + 1}/${STEPS.length}`;
+            document.getElementById('hud-score').innerText = score;
+            const pct = ((currentIdx + (stepSolved[currentIdx] ? 1 : 0)) / STEPS.length) * 100;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+
+            const st = STEPS[currentIdx];
+            document.getElementById('stage-title-text').innerText = st.title;
+            document.getElementById('stage-page-tag').innerText = st.page;
+
+            ['p144', 'p145', 'p146'].forEach(t => {
+                document.getElementById('tab-' + t).classList.toggle('active', st.tab === t);
+            });
+            document.getElementById('btn-prev-step').disabled = (currentIdx === 0);
+            document.getElementById('btn-next-step').disabled = (currentIdx === STEPS.length - 1);
+        }
+
+        function jumpToStep(idx) {
+            initAudio();
+            playSound('tick');
+            currentIdx = Math.max(0, Math.min(STEPS.length - 1, idx));
+            renderStep();
+        }
+        function prevStep() { if (currentIdx > 0) jumpToStep(currentIdx - 1); }
+        function nextStep() {
+            if (currentIdx < STEPS.length - 1) jumpToStep(currentIdx + 1);
+            else showFinalCelebration();
+        }
+
+        // ==========================================
+        // ADIM ÇİZİM MOTORU
+        // ==========================================
+        function renderStep() {
+            updateHUD();
+            const st = STEPS[currentIdx];
+            const body = document.getElementById('stage-body');
+            body.innerHTML = '';
+
+            if (st.type === 's144_a') {
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="comic-grid">
+                            <div class="comic-panel">
+                                <svg class="comic-svg" viewBox="0 0 110 80">
+                                    <rect x="10" y="42" width="60" height="22" rx="4" fill="#64748b"/>
+                                    <rect x="68" y="34" width="28" height="30" rx="5" fill="#f59e0b"/>
+                                    <rect x="74" y="39" width="16" height="11" rx="2" fill="#bae6fd"/>
+                                    <ellipse cx="42" cy="34" rx="26" ry="16" fill="#cbd5e1" stroke="#334155" stroke-width="2.5"/>
+                                    <circle cx="26" cy="66" r="8" fill="#1e293b"/><circle cx="54" cy="66" r="8" fill="#1e293b"/><circle cx="84" cy="66" r="8" fill="#1e293b"/>
+                                    <text x="42" y="38" text-anchor="middle" font-size="12" font-weight="900" fill="#0f172a">5 m³</text>
+                                </svg>
+                                <div class="comic-bubble"><b>Elif:</b> Babam bahçe tadilatı için kum sipariş ederken <b>"5 metreküp (m³) kum lazım."</b> demişti. Neden "litre" demedi ki?</div>
+                            </div>
+                            <div class="comic-panel">
+                                <svg class="comic-svg" viewBox="0 0 110 80">
+                                    <rect x="34" y="22" width="38" height="48" rx="6" fill="#4ade80" stroke="#15803d" stroke-width="2.5"/>
+                                    <path d="M53,22 L53,10 L66,6" fill="none" stroke="#f97316" stroke-width="4" stroke-linecap="round"/>
+                                    <circle cx="53" cy="48" r="10" fill="#f97316"/>
+                                    <text x="53" y="18" text-anchor="middle" font-size="10" font-weight="900" fill="#1e293b">0,0002 m³?</text>
+                                </svg>
+                                <div class="comic-bubble"><b>Metin:</b> İkisi de hacim ölçme birimi ama farklı durumlarda kullanılır. Elimdeki meyve suyu kutusunda <b>0,0002 m³</b> yazsa komik olmaz mı?</div>
+                            </div>
+                        </div>
+                        <div class="scenario-text"><b>a)</b> Sizce neden farklı durumlar için farklı ölçü birimlerinin kullanılması gerekir?</div>
+                    </div>
+                    <div class="options-grid" id="quiz-opts"></div>
+                    <div class="post-bar" id="post-bar"></div>
+                `;
+                renderQuizOptions([
+                    { k: 'A', t: 'Ölçülen miktarın büyüklüğüne göre çok büyük ya da çok küçük (virgüllü) sayılarla uğraşmamak ve kolay ifade etmek için.' },
+                    { k: 'B', t: 'Sadece sıvılar hacim birimiyle, katılar uzunluk birimiyle ölçüldüğü için.' },
+                    { k: 'C', t: 'Metreküp sadece inşaat mühendislerinin kullanabildiği gizli bir birim olduğu için.' }
+                ], 'A', st.note);
+            }
+            else if (st.type === 's144_b') {
+                s144bSolvedCount = 0;
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="scenario-text"><b>b)</b> Aşağıdaki gerçek yaşam durumları için <b>Metreküp (m³)</b> veya <b>Litre (L)</b> ölçü birimlerinden hangisinin daha uygun olduğunu seçiniz:</div>
+                    </div>
+                    <div class="unit-table" id="unit-table"></div>
+                    <div class="post-bar" id="post-bar"></div>
+                `;
+                const tbl = document.getElementById('unit-table');
+                st.rows.forEach((r, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'unit-row-card';
+                    card.id = `urow-${idx}`;
+                    card.innerHTML = `
+                        <div class="unit-row-left">
+                            <div class="unit-emoji">${r.emoji}</div>
+                            <div class="unit-label">${r.text}</div>
+                        </div>
+                        <div class="unit-btns">
+                            <button class="u-choice" onclick="pickUnit144(${idx}, 'm³', this)">m³</button>
+                            <button class="u-choice" onclick="pickUnit144(${idx}, 'L', this)">Litre (L)</button>
+                        </div>
+                    `;
+                    tbl.appendChild(card);
+                });
+            }
+            else if (st.type === 's145_truck') {
+                truckBoxes = 0;
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="scenario-text"><b>Soru 1)</b> Kasasının ayrıt uzunlukları <b>3 m, 2 m ve 2 m</b> olan kargo kamyonunun kasasına, her ayrıtı <b>1 m</b> olan kolilerden boşluk kalmayacak şekilde kaç adet sığar? Önce kolileri kasaya yükle!</div>
+                    </div>
+                    <div class="truck-workspace">
+                        <div class="truck-canvas-box">
+                            <svg id="truck-svg" viewBox="0 0 360 220" style="width:100%; max-width:420px; height:auto;"></svg>
+                            <div class="truck-controls">
+                                <button class="btn-action" id="btn-load-1" onclick="loadTruckBoxes(1)">📦 +1 Koli Yükle</button>
+                                <button class="btn-action teal" id="btn-load-row" onclick="loadTruckBoxes(6)">⚡ 1 Kat Doldur (+6)</button>
+                                <button class="btn-action gray" onclick="resetTruck()">🧹 Boşalt</button>
+                            </div>
+                        </div>
+                        <div class="truck-info-panel">
+                            <div class="metric-box" id="truck-metric">Yüklenen Koli: 0 / 12 (0 m³)</div>
+                            <div style="font-size:13.5px; font-weight:700; color:#334155; line-height:1.45;">
+                                📏 Kasa Uzunluğu: <b>3 m</b> (3 koli)<br>
+                                📏 Kasa Genişliği: <b>2 m</b> (2 koli)<br>
+                                📏 Kasa Yüksekliği: <b>2 m</b> (2 kat)<br>
+                                👉 <b>3 × 2 × 2 = ?</b>
+                            </div>
+                            <div class="post-bar" id="post-bar"></div>
+                        </div>
+                    </div>
+                `;
+                drawTruckSVG();
+            }
+            else if (st.type === 's145_koli') {
+                koliBaseRows = 0;
+                koliLayers = 0;
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="scenario-text"><b>Soru 2)</b> Her ayrıtı <b>1 m (10 dm)</b> olan bir kolinin içine, her ayrıtı <b>1 dm</b> olan küçük kutular boşluk kalmayacak şekilde yerleştiriliyor.<br>Önce <b>taban katını 10'arlı sıralarla</b>, taban dolunca da <b>üst katları tek tek</b> tıklayarak 1 koliyi doldur!</div>
+                    </div>
+                    <div class="truck-workspace">
+                        <div class="truck-canvas-box">
+                            <svg id="koli-svg" viewBox="0 0 380 250" style="width:100%; max-width:420px; height:auto; cursor:pointer;" onclick="fillKoliStep()" title="Kutu eklemek için koliye veya butona tıkla"></svg>
+                            <div class="truck-controls">
+                                <button class="btn-action" id="btn-koli-fill" onclick="fillKoliStep()">📦 +10 Kutu (1. Sırayı Doldur)</button>
+                                <button class="btn-action gray" onclick="resetKoli()">🧹 Boşalt</button>
+                            </div>
+                        </div>
+                        <div class="truck-info-panel">
+                            <div class="koli-phase-pill" id="koli-phase">1. Aşama: Taban Katını 10'arlı Doldur (0/10 Sıra)</div>
+                            <div class="metric-box" id="koli-metric">Kolideki Kutu: 0 / 1 000 (0 dm³)</div>
+                            <div style="font-size:13.5px; font-weight:700; color:#334155; line-height:1.5;">
+                                📏 Koli Ayrıtı: <b>1 m = 10 dm</b><br>
+                                🧱 Taban Katı: <b>10 × 10 = 100 kutu</b><br>
+                                🏗️ 10 Kat Toplamı: <b>100 × 10 = 1 000 kutu</b><br>
+                                <span style="color:#0f766e;">👆 Koliye veya turuncu butona tıklayarak doldur!</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="koli-quiz-section" id="koli-quiz-section">
+                        <div class="scenario-card" style="border-left-color:#16a34a; background:#f0fdf4; border-color:#86efac;">
+                            <div class="scenario-text">🎉 Harika! <b>1 kolinin</b> içine tam <b>1 000 adet</b> küçük kutu sığdığını gördün! Kamyonun kasasında <b>12 adet koli</b> olduğuna göre, kasada toplam kaç adet kutu olur?</div>
+                        </div>
+                        <div class="options-grid" id="quiz-opts"></div>
+                        <div class="post-bar" id="post-bar"></div>
+                    </div>
+                `;
+                drawKoliSVG();
+                renderQuizOptions(st.opts, st.ans, st.note);
+            }
+            else if (st.type === 's146_prism') {
+                prismLayers = 0;
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="scenario-text">${st.scenario}</div>
+                    </div>
+                    <div class="truck-workspace">
+                        <div class="truck-canvas-box">
+                            <svg id="prism-svg" viewBox="0 0 380 265" style="width:100%; max-width:420px; height:auto; cursor:pointer;" onclick="addPrismLayer()" title="Katman eklemek için prizmaya veya butona tıkla"></svg>
+                            <div class="truck-controls">
+                                <button class="btn-action teal" id="btn-prism-add" onclick="addPrismLayer()">🧱 +1 cm Katman Ekle (+400 cm³)</button>
+                                <button class="btn-action gray" onclick="resetPrism()">🧹 Boşalt</button>
+                            </div>
+                        </div>
+                        <div class="truck-info-panel">
+                            <div class="koli-phase-pill" id="prism-phase">🎯 Hedef Hacim: 2 dm³ = 2 000 cm³</div>
+                            <div class="metric-box" id="prism-metric">Yükseklik: 0 cm • Hacim: 0 cm³</div>
+                            <div class="prism-meter-wrap"><div class="prism-meter-fill" id="prism-meter"></div></div>
+                            <div style="font-size:13.5px; font-weight:700; color:#334155; line-height:1.5;">
+                                📐 Taban Ayrıtları: <b>20 cm × 20 cm</b><br>
+                                🟦 Taban Alanı: <b>20 × 20 = 400 cm²</b><br>
+                                🧱 Her <b>1 cm</b> yükseklik = <b>+400 cm³</b><br>
+                                <span style="color:#0f766e;">👆 Prizmaya veya yeşil butona tıklayarak 2 000 cm³'e ulaş!</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="koli-quiz-section" id="prism-quiz-section">
+                        <div class="scenario-card" style="border-left-color:#16a34a; background:#f0fdf4; border-color:#86efac;">
+                            <div class="scenario-text">🎉 Kare prizmayı <b>2 000 cm³ (2 dm³)</b> olacak şekilde tam doldurdun! Modeline göre prizmanın <b>yüksekliği</b> kaç <b>cm</b>'dir?</div>
+                        </div>
+                        <div class="options-grid" id="quiz-opts"></div>
+                        <div class="post-bar" id="post-bar"></div>
+                    </div>
+                `;
+                drawPrismSVG();
+                renderQuizOptions(st.opts, st.ans, st.note);
+            }
+            else if (st.type === 's146_garden') {
+                gardenBags = 0;
+                gardenJustPoured = false;
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="scenario-text">${st.scenario}</div>
+                    </div>
+                    <div class="truck-workspace">
+                        <div class="truck-canvas-box" style="background:linear-gradient(180deg, #f0fdf4 0%, #dcfce7 68%, #bbf7d0 100%); border-color:#16a34a;">
+                            <div class="garden-stage-grid">
+                                <svg id="garden-svg" viewBox="0 0 340 215" style="width:100%; max-width:300px; height:auto; cursor:pointer;" onclick="pourSoilBag(1)" title="Toprak dökmek için tıkla"></svg>
+                                <button class="soil-bag-btn" id="btn-soil-bag" onclick="pourSoilBag(1)" title="1 paket toprak dök (+60 dm³)">
+                                    <svg viewBox="0 0 110 124" width="84" height="94" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Çuval üst büzgü -->
+                                        <path d="M36,12 L74,12 L68,26 L42,26 Z" fill="#b45309" stroke="#451a03" stroke-width="2.5" stroke-linejoin="round"/>
+                                        <rect x="38" y="23" width="34" height="7" rx="3" fill="#dc2626" stroke="#451a03" stroke-width="1.8"/>
+                                        <!-- Çuval gövdesi -->
+                                        <path d="M38,30 Q14,42 15,82 Q16,112 30,116 L80,116 Q94,112 95,82 Q96,42 72,30 Z" fill="#92400e" stroke="#451a03" stroke-width="2.8"/>
+                                        <!-- Çuval ışık ve kıvrım -->
+                                        <path d="M26,48 Q22,74 26,102" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+                                        <!-- Ön etiket kartı -->
+                                        <rect x="24" y="45" width="62" height="54" rx="9" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+                                        <!-- Etiket içi yaprak -->
+                                        <path d="M55,63 Q44,54 47,49 Q56,49 55,63 Z" fill="#16a34a"/>
+                                        <path d="M55,63 Q66,54 63,49 Q54,49 55,63 Z" fill="#22c55e"/>
+                                        <text x="55" y="77" text-anchor="middle" font-size="11.5" font-weight="900" fill="#78350f">TOPRAK</text>
+                                        <text x="55" y="93" text-anchor="middle" font-size="13.5" font-weight="900" fill="#15803d">60 dm³</text>
+                                    </svg>
+                                    <span class="soil-bag-cta">👆 Pakete Tıkla (+1)</span>
+                                </button>
+                            </div>
+                            <div class="truck-controls">
+                                <button class="btn-action teal" id="btn-garden-5" onclick="pourSoilBag(5)">⚡ +5 Paket Dök (+300 dm³)</button>
+                                <button class="btn-action gray" onclick="resetGarden()">🧹 Boşalt</button>
+                            </div>
+                        </div>
+                        <div class="truck-info-panel">
+                            <div class="koli-phase-pill" id="garden-phase">🎯 Hedef Hacim: 1 200 dm³ (Her paket 60 dm³)</div>
+                            <div class="metric-box" id="garden-metric">Dökülen: 0 Paket • 0 / 1 200 dm³</div>
+                            <div class="prism-meter-wrap"><div class="prism-meter-fill" id="garden-meter" style="background:linear-gradient(90deg, #92400e, #16a34a);"></div></div>
+                            <div style="font-size:13.5px; font-weight:700; color:#334155; line-height:1.5;">
+                                📏 Uzunluk: <b>2 m = 20 dm</b><br>
+                                📏 Genişlik: <b>1,5 m = 15 dm</b><br>
+                                📏 Derinlik: <b>40 cm = 4 dm</b><br>
+                                📦 1 Toprak Paketi = <b>60 dm³</b><br>
+                                <span style="color:#15803d;">👆 Toprak paketine tıkladıkça sebze yatağı dolacak!</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="koli-quiz-section" id="garden-quiz-section">
+                        <div class="scenario-card" style="border-left-color:#16a34a; background:#f0fdf4; border-color:#86efac;">
+                            <div class="scenario-text">🌱 Harika! Sebze yatağı tamamen doldu ve sebzeler filizlendi! Peyzaj mimarı <b>en az kaç paket</b> toprak sipariş etmelidir?</div>
+                        </div>
+                        <div class="options-grid" id="quiz-opts"></div>
+                        <div class="post-bar" id="post-bar"></div>
+                    </div>
+                `;
+                drawGardenSVG();
+                renderQuizOptions(st.opts, st.ans, st.note);
+            }
+            else if (st.type === 'quiz') {
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="scenario-text">${st.scenario}</div>
+                    </div>
+                    <div class="options-grid" id="quiz-opts"></div>
+                    <div class="post-bar" id="post-bar"></div>
+                `;
+                renderQuizOptions(st.opts, st.ans, st.note);
+            }
+            else if (st.type === 'ladder') {
+                ladderCurrentIdx = st.startIdx;
+                ladderCurrentVal = st.startVal;
+                ladderVisited = [st.startIdx];
+                ladderTraveledArrows = [];
+                ladderLastArrow = null;
+                ladderJustLitIdx = st.startIdx;
+                body.innerHTML = `
+                    <div class="scenario-card">
+                        <div class="scenario-text">🪜 <b>Hacim Merdiveni Kuralı:</b> Aşağı inerken her basamakta <b>× 1000</b>, yukarı çıkarken her basamakta <b>÷ 1000</b> yapılır! Butonlara veya merdivendeki sıradaki basamağa tıklayarak hedefe ulaş!</div>
+                    </div>
+                    <div class="ladder-workspace">
+                        <div class="ladder-stage" id="ladder-stage"></div>
+                        <div class="converter-panel">
+                            <div class="conv-question">${formatNumberTR(st.startVal)} ${UNITS[st.startIdx]} = ? ${UNITS[st.targetIdx]}</div>
+                            <div class="conv-live-display" id="conv-live">${formatNumberTR(ladderCurrentVal)} ${UNITS[ladderCurrentIdx]}</div>
+                            <div class="conv-btns">
+                                <button class="btn-step-down" id="btn-ld-down" onclick="moveLadder(1)">⬇️ Aşağı İn<br>(× 1000)</button>
+                                <button class="btn-step-up" id="btn-ld-up" onclick="moveLadder(-1)">⬆️ Yukarı Çık<br>(÷ 1000)</button>
+                            </div>
+                            <div class="post-bar" id="post-bar"></div>
+                        </div>
+                    </div>
+                `;
+                renderLadderUI(st);
+            }
+            body.scrollTop = 0;
+        }
+
+        // ==========================================
+        // SAYFA 144 (b): m³ ve LİTRE SEÇİMİ
+        // ==========================================
+        function pickUnit144(rowIdx, chosenUnit, btn) {
+            initAudio();
+            const st = STEPS[currentIdx];
+            if (!st || !st.rows) return;
+            const row = st.rows[rowIdx];
+            const card = document.getElementById(`urow-${rowIdx}`);
+            if (!card || card.classList.contains('solved')) return;
+
+            if (chosenUnit === row.ans) {
+                playSound('correct');
+                launchConfetti('mini');
+                card.classList.add('solved');
+                btn.classList.add('picked-ok');
+                card.querySelectorAll('.u-choice').forEach(b => {
+                    if (b !== btn) {
+                        b.style.opacity = '0.35';
+                        b.disabled = true;
+                    }
+                });
+                s144bSolvedCount++;
+                score += 20;
+                updateHUD();
+                showToast(`✔ Doğru! ${row.reason}`, 'ok');
+
+                if (s144bSolvedCount === st.rows.length) {
+                    markStepDone(st.note);
+                }
+            } else {
+                playSound('wrong');
+                btn.classList.add('picked-err');
+                setTimeout(() => btn.classList.remove('picked-err'), 420);
+                showToast(`✖ Tekrar düşünelim! ${row.reason}`, 'err');
+            }
+        }
+
+        // ==========================================
+        // SAYFA 145 (Soru 1): KARGO KAMYONU 3D KOLİ YÜKLEME
+        // ==========================================
+        function drawTruckSVG() {
+            const svgEl = document.getElementById('truck-svg');
+            if (!svgEl) return;
+
+            const ox = 128, oy = 114;
+            const proj = (x, y, z) => [
+                ox + x * 36 - z * 24,
+                oy + x * 14 + z * 14 - y * 32
+            ];
+            const pt = (x, y, z) => proj(x, y, z).map(v => v.toFixed(1)).join(',');
+
+            let svg = '';
+
+            // Zemin gölgesi
+            svg += `<polygon points="${pt(0,0,2.2)} ${pt(4.1,0,2.2)} ${pt(4.1,0,-0.2)} ${pt(0,0,-0.2)}" fill="rgba(15,23,42,0.18)"/>`;
+
+            // Kasa arka duvarları (iç yüzeyler)
+            svg += `<polygon points="${pt(0,0,0)} ${pt(3,0,0)} ${pt(3,2,0)} ${pt(0,2,0)}" fill="#cbd5e1" stroke="#475569" stroke-width="1.6"/>`;
+            svg += `<polygon points="${pt(0,0,0)} ${pt(0,0,2)} ${pt(0,2,2)} ${pt(0,2,0)}" fill="#94a3b8" stroke="#475569" stroke-width="1.6"/>`;
+            // Kasa tabanı
+            svg += `<polygon points="${pt(0,0,0)} ${pt(3,0,0)} ${pt(3,0,2)} ${pt(0,0,2)}" fill="#e2e8f0" stroke="#475569" stroke-width="1.6"/>`;
+
+            // Taban 3x2 kılavuz çizgileri
+            for (let x = 1; x < 3; x++) {
+                svg += `<line x1="${proj(x,0,0)[0]}" y1="${proj(x,0,0)[1]}" x2="${proj(x,0,2)[0]}" y2="${proj(x,0,2)[1]}" stroke="#94a3b8" stroke-dasharray="3,3" stroke-width="1.2"/>`;
+            }
+            svg += `<line x1="${proj(0,0,1)[0]}" y1="${proj(0,0,1)[1]}" x2="${proj(3,0,1)[0]}" y2="${proj(3,0,1)[1]}" stroke="#94a3b8" stroke-dasharray="3,3" stroke-width="1.2"/>`;
+
+            // Kamyon ön kabini (sağ tarafta x: 3.15 -> 4.05)
+            svg += `<polygon points="${pt(3.15,0,0.1)} ${pt(4.05,0,0.1)} ${pt(4.05,1.5,0.1)} ${pt(3.15,1.5,0.1)}" fill="#dc2626" stroke="#7f1d1d" stroke-width="1.6"/>`;
+            svg += `<polygon points="${pt(3.15,1.5,0.1)} ${pt(4.05,1.5,0.1)} ${pt(4.05,1.5,1.9)} ${pt(3.15,1.5,1.9)}" fill="#f87171" stroke="#7f1d1d" stroke-width="1.6"/>`;
+            svg += `<polygon points="${pt(3.15,0,1.9)} ${pt(4.05,0,1.9)} ${pt(4.05,1.5,1.9)} ${pt(3.15,1.5,1.9)}" fill="#ef4444" stroke="#7f1d1d" stroke-width="1.6"/>`;
+            svg += `<polygon points="${pt(4.05,0,0.1)} ${pt(4.05,0,1.9)} ${pt(4.05,1.5,1.9)} ${pt(4.05,1.5,0.1)}" fill="#b91c1c" stroke="#7f1d1d" stroke-width="1.6"/>`;
+            // Kabin camı
+            svg += `<polygon points="${pt(3.35,0.75,1.91)} ${pt(3.92,0.75,1.91)} ${pt(3.92,1.35,1.91)} ${pt(3.35,1.35,1.91)}" fill="#bae6fd" stroke="#1e293b" stroke-width="1.2"/>`;
+
+            // Yüklenen koliler (arkadan öne ve alttan üste doğru)
+            let drawn = 0;
+            for (let y = 0; y < 2; y++) {
+                for (let z = 0; z < 2; z++) {
+                    for (let x = 0; x < 3; x++) {
+                        if (drawn >= truckBoxes) break;
+                        const pad = 0.04;
+                        const x0 = x + pad, x1 = x + 1 - pad;
+                        const y0 = y, y1 = y + 1 - 0.03;
+                        const z0 = z + pad, z1 = z + 1 - pad;
+                        // Üst yüz
+                        svg += `<polygon points="${pt(x0,y1,z0)} ${pt(x1,y1,z0)} ${pt(x1,y1,z1)} ${pt(x0,y1,z1)}" fill="#f5c278" stroke="#92400e" stroke-width="1.4"/>`;
+                        // Koli bandı
+                        svg += `<polygon points="${pt(x0+0.35,y1,z0)} ${pt(x0+0.57,y1,z0)} ${pt(x0+0.57,y1,z1)} ${pt(x0+0.35,y1,z1)}" fill="#fef3c7" opacity="0.75"/>`;
+                        // Sol-ön yüz (z = z1)
+                        svg += `<polygon points="${pt(x0,y1,z1)} ${pt(x1,y1,z1)} ${pt(x1,y0,z1)} ${pt(x0,y0,z1)}" fill="#e09f4c" stroke="#92400e" stroke-width="1.4"/>`;
+                        // Sağ-ön yüz (x = x1)
+                        svg += `<polygon points="${pt(x1,y1,z1)} ${pt(x1,y1,z0)} ${pt(x1,y0,z0)} ${pt(x1,y0,z1)}" fill="#c27d2e" stroke="#92400e" stroke-width="1.4"/>`;
+                        drawn++;
+                    }
+                }
+            }
+
+            // Kasa ön şeffaf çerçeve çizgileri
+            svg += `<polyline points="${pt(0,2,2)} ${pt(3,2,2)} ${pt(3,2,0)}" fill="none" stroke="#1e293b" stroke-width="1.8" stroke-dasharray="4,3"/>`;
+            svg += `<line x1="${proj(3,0,2)[0]}" y1="${proj(3,0,2)[1]}" x2="${proj(3,2,2)[0]}" y2="${proj(3,2,2)[1]}" stroke="#1e293b" stroke-width="1.8" stroke-dasharray="4,3"/>`;
+
+            // Tekerlekler
+            const w1 = proj(0.7, 0, 2.02);
+            const w2 = proj(2.3, 0, 2.02);
+            const w3 = proj(3.6, 0, 1.98);
+            [w1, w2, w3].forEach(([wx, wy]) => {
+                svg += `<circle cx="${wx}" cy="${wy + 12}" r="12" fill="#1e293b" stroke="#0f172a" stroke-width="2"/>`;
+                svg += `<circle cx="${wx}" cy="${wy + 12}" r="5" fill="#cbd5e1"/>`;
+            });
+
+            // Boyut etiketleri
+            const mLen = proj(1.5, 0, 2.35);
+            const mWid = proj(-0.35, 0, 1.0);
+            const mHei = proj(-0.35, 1.0, 2.0);
+            svg += `<text x="${mLen[0]}" y="${mLen[1]+10}" text-anchor="middle" font-size="12" font-weight="900" fill="#0f172a">3 m</text>`;
+            svg += `<text x="${mWid[0]}" y="${mWid[1]}" text-anchor="middle" font-size="12" font-weight="900" fill="#0f172a">2 m</text>`;
+            svg += `<text x="${mHei[0]-4}" y="${mHei[1]}" text-anchor="end" font-size="12" font-weight="900" fill="#0f172a">2 m</text>`;
+
+            svgEl.innerHTML = svg;
+        }
+
+        function loadTruckBoxes(count) {
+            initAudio();
+            if (truckBoxes >= 12) return;
+            truckBoxes = Math.min(12, truckBoxes + count);
+            playSound('tick');
+            launchConfetti('mini');
+            drawTruckSVG();
+
+            const metric = document.getElementById('truck-metric');
+            if (metric) metric.innerText = `Yüklenen Koli: ${truckBoxes} / 12 (${truckBoxes} m³)`;
+
+            if (truckBoxes === 12) {
+                const b1 = document.getElementById('btn-load-1');
+                const b2 = document.getElementById('btn-load-row');
+                if (b1) b1.disabled = true;
+                if (b2) b2.disabled = true;
+                markStepDone(STEPS[currentIdx].note);
+            }
+        }
+
+        function resetTruck() {
+            initAudio();
+            playSound('tick');
+            truckBoxes = 0;
+            const b1 = document.getElementById('btn-load-1');
+            const b2 = document.getElementById('btn-load-row');
+            if (b1) b1.disabled = false;
+            if (b2) b2.disabled = false;
+            const metric = document.getElementById('truck-metric');
+            if (metric) metric.innerText = `Yüklenen Koli: 0 / 12 (0 m³)`;
+            drawTruckSVG();
+        }
+
+        // ==========================================
+        // SAYFA 145 (Soru 2): 1 m³ KOLİYİ 10'ARLI VE KAT KAT DOLDURMA
+        // ==========================================
+        function drawKoliSVG() {
+            const svgEl = document.getElementById('koli-svg');
+            if (!svgEl) return;
+
+            const ox = 190, oy = 144;
+            const proj = (x, y, z) => [
+                ox + (x - z) * 11,
+                oy + (x + z) * 5.5 - y * 12.2
+            ];
+            const pt = (x, y, z) => proj(x, y, z).map(v => v.toFixed(1)).join(',');
+
+            let svg = '';
+
+            // Dış 1 m³ kolinin arka iç yüzleri
+            svg += `<polygon points="${pt(0,0,0)} ${pt(10,0,0)} ${pt(10,10,0)} ${pt(0,10,0)}" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>`;
+            svg += `<polygon points="${pt(0,0,0)} ${pt(0,0,10)} ${pt(0,10,10)} ${pt(0,10,0)}" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>`;
+            svg += `<polygon points="${pt(0,0,0)} ${pt(10,0,0)} ${pt(10,0,10)} ${pt(0,0,10)}" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>`;
+
+            // Taban 10x10 ızgara çizgileri
+            for (let i = 1; i < 10; i++) {
+                svg += `<line x1="${proj(i,0,0)[0]}" y1="${proj(i,0,0)[1]}" x2="${proj(i,0,10)[0]}" y2="${proj(i,0,10)[1]}" stroke="#cbd5e1" stroke-width="0.9"/>`;
+                svg += `<line x1="${proj(0,0,i)[0]}" y1="${proj(0,0,i)[1]}" x2="${proj(10,0,i)[0]}" y2="${proj(10,0,i)[1]}" stroke="#cbd5e1" stroke-width="0.9"/>`;
+            }
+
+            if (koliLayers === 0 && koliBaseRows > 0) {
+                // 1. Aşama: Taban katında aynı hizada 10'arlı sıralar (z: 0 -> koliBaseRows)
+                const zEnd = koliBaseRows;
+                // Üst yüz
+                svg += `<polygon points="${pt(0,1,0)} ${pt(10,1,0)} ${pt(10,1,zEnd)} ${pt(0,1,zEnd)}" fill="#fcd34d" stroke="#b45309" stroke-width="1.4"/>`;
+                // Ön-sol yüz (z = zEnd)
+                svg += `<polygon points="${pt(0,1,zEnd)} ${pt(10,1,zEnd)} ${pt(10,0,zEnd)} ${pt(0,0,zEnd)}" fill="#f59e0b" stroke="#b45309" stroke-width="1.4"/>`;
+                // Ön-sağ yüz (x = 10)
+                svg += `<polygon points="${pt(10,1,zEnd)} ${pt(10,1,0)} ${pt(10,0,0)} ${pt(10,0,zEnd)}" fill="#d97706" stroke="#b45309" stroke-width="1.4"/>`;
+
+                // 10'arlı birim küp bölümleri
+                for (let x = 1; x < 10; x++) {
+                    svg += `<line x1="${proj(x,1,0)[0]}" y1="${proj(x,1,0)[1]}" x2="${proj(x,1,zEnd)[0]}" y2="${proj(x,1,zEnd)[1]}" stroke="#92400e" stroke-width="0.9" opacity="0.7"/>`;
+                    svg += `<line x1="${proj(x,1,zEnd)[0]}" y1="${proj(x,1,zEnd)[1]}" x2="${proj(x,0,zEnd)[0]}" y2="${proj(x,0,zEnd)[1]}" stroke="#92400e" stroke-width="0.9" opacity="0.7"/>`;
+                }
+                for (let z = 1; z < zEnd; z++) {
+                    svg += `<line x1="${proj(0,1,z)[0]}" y1="${proj(0,1,z)[1]}" x2="${proj(10,1,z)[0]}" y2="${proj(10,1,z)[1]}" stroke="#92400e" stroke-width="0.9" opacity="0.7"/>`;
+                    svg += `<line x1="${proj(10,1,z)[0]}" y1="${proj(10,1,z)[1]}" x2="${proj(10,0,z)[0]}" y2="${proj(10,0,z)[1]}" stroke="#92400e" stroke-width="0.9" opacity="0.7"/>`;
+                }
+            } else if (koliLayers >= 1) {
+                // 2. Aşama: Kat kat dolum (y: 0 -> koliLayers)
+                const h = koliLayers;
+                // Üst yüz
+                svg += `<polygon points="${pt(0,h,0)} ${pt(10,h,0)} ${pt(10,h,10)} ${pt(0,h,10)}" fill="#fde047" stroke="#92400e" stroke-width="1.6"/>`;
+                // Sol-ön yüz (z = 10)
+                svg += `<polygon points="${pt(0,h,10)} ${pt(10,h,10)} ${pt(10,0,10)} ${pt(0,0,10)}" fill="#f59e0b" stroke="#92400e" stroke-width="1.6"/>`;
+                // Sağ-ön yüz (x = 10)
+                svg += `<polygon points="${pt(10,h,10)} ${pt(10,h,0)} ${pt(10,0,0)} ${pt(10,0,10)}" fill="#d97706" stroke="#92400e" stroke-width="1.6"/>`;
+
+                // Üst yüz 10x10 çizgileri
+                for (let i = 1; i < 10; i++) {
+                    svg += `<line x1="${proj(i,h,0)[0]}" y1="${proj(i,h,0)[1]}" x2="${proj(i,h,10)[0]}" y2="${proj(i,h,10)[1]}" stroke="#92400e" stroke-width="0.85" opacity="0.65"/>`;
+                    svg += `<line x1="${proj(0,h,i)[0]}" y1="${proj(0,h,i)[1]}" x2="${proj(10,h,i)[0]}" y2="${proj(10,h,i)[1]}" stroke="#92400e" stroke-width="0.85" opacity="0.65"/>`;
+                    // Dikey sütun çizgileri
+                    svg += `<line x1="${proj(i,h,10)[0]}" y1="${proj(i,h,10)[1]}" x2="${proj(i,0,10)[0]}" y2="${proj(i,0,10)[1]}" stroke="#92400e" stroke-width="0.8" opacity="0.55"/>`;
+                    svg += `<line x1="${proj(10,h,i)[0]}" y1="${proj(10,h,i)[1]}" x2="${proj(10,0,i)[0]}" y2="${proj(10,0,i)[1]}" stroke="#92400e" stroke-width="0.8" opacity="0.55"/>`;
+                }
+                // Yatay kat çizgileri
+                for (let ly = 1; ly < h; ly++) {
+                    svg += `<line x1="${proj(0,ly,10)[0]}" y1="${proj(0,ly,10)[1]}" x2="${proj(10,ly,10)[0]}" y2="${proj(10,ly,10)[1]}" stroke="#78350f" stroke-width="1.2" opacity="0.8"/>`;
+                    svg += `<line x1="${proj(10,ly,10)[0]}" y1="${proj(10,ly,10)[1]}" x2="${proj(10,ly,0)[0]}" y2="${proj(10,ly,0)[1]}" stroke="#78350f" stroke-width="1.2" opacity="0.8"/>`;
+                }
+            }
+
+            // Dış 1 m³ kolinin ön tel kafesi
+            svg += `<polyline points="${pt(0,10,0)} ${pt(10,10,0)} ${pt(10,10,10)} ${pt(0,10,10)} ${pt(0,10,0)}" fill="none" stroke="#0f172a" stroke-width="1.8" stroke-dasharray="4,3"/>`;
+            svg += `<line x1="${proj(10,0,10)[0]}" y1="${proj(10,0,10)[1]}" x2="${proj(10,10,10)[0]}" y2="${proj(10,10,10)[1]}" stroke="#0f172a" stroke-width="1.8" stroke-dasharray="4,3"/>`;
+
+            // Ölçü etiketleri
+            const lblL = proj(5, 0, 11.4);
+            const lblR = proj(11.4, 0, 5);
+            const lblH = proj(-1.4, 5, 10);
+            svg += `<text x="${lblL[0]}" y="${lblL[1]}" text-anchor="middle" font-size="11.5" font-weight="900" fill="#0f172a">1 m (10 dm)</text>`;
+            svg += `<text x="${lblR[0]}" y="${lblR[1]}" text-anchor="middle" font-size="11.5" font-weight="900" fill="#0f172a">1 m (10 dm)</text>`;
+            svg += `<text x="${lblH[0]}" y="${lblH[1]}" text-anchor="end" font-size="11.5" font-weight="900" fill="#0f172a">10 dm</text>`;
+
+            svgEl.innerHTML = svg;
+        }
+
+        function fillKoliStep() {
+            initAudio();
+            if (koliLayers >= 10) return;
+
+            const btn = document.getElementById('btn-koli-fill');
+            const phaseEl = document.getElementById('koli-phase');
+            const metricEl = document.getElementById('koli-metric');
+
+            if (koliLayers === 0) {
+                koliBaseRows++;
+                playSound('tick');
+                launchConfetti('mini');
+                if (koliBaseRows < 10) {
+                    const totalCubes = koliBaseRows * 10;
+                    phaseEl.innerText = `1. Aşama: Taban Katını 10'arlı Doldur (${koliBaseRows}/10 Sıra)`;
+                    metricEl.innerText = `Kolideki Kutu: ${totalCubes} / 1 000 (${totalCubes} dm³)`;
+                    btn.innerText = `📦 +10 Kutu (${koliBaseRows + 1}. Sırayı Doldur)`;
+                } else {
+                    // Taban katı (100 kutu) doldu -> 1. kat tamamlandı!
+                    koliLayers = 1;
+                    playSound('correct');
+                    phaseEl.innerText = `2. Aşama: Taban Doldu! Kat Kat Doldur (1/10 Kat)`;
+                    metricEl.innerText = `Kolideki Kutu: 100 / 1 000 (100 dm³)`;
+                    btn.classList.add('teal');
+                    btn.innerText = `🏗️ +100 Kutu (2. Katı Doldur)`;
+                    showToast('🎉 Taban katı 100 kutuyla doldu! Şimdi katları tek tek doldur!', 'ok');
+                }
+            } else {
+                koliLayers++;
+                const totalCubes = koliLayers * 100;
+                if (koliLayers < 10) {
+                    playSound('stepUp');
+                    launchConfetti('mini');
+                    phaseEl.innerText = `2. Aşama: Kat Kat Doldur (${koliLayers}/10 Kat)`;
+                    metricEl.innerText = `Kolideki Kutu: ${formatNumberTR(totalCubes)} / 1 000 (${formatNumberTR(totalCubes)} dm³)`;
+                    btn.innerText = `🏗️ +100 Kutu (${koliLayers + 1}. Katı Doldur)`;
+                } else {
+                    playSound('fanfare');
+                    launchConfetti('big');
+                    phaseEl.innerText = `✅ 1 Koli Tamamen Doldu! (10/10 Kat = 1 000 Kutu)`;
+                    metricEl.innerText = `Kolideki Kutu: 1 000 / 1 000 (1 000 dm³)`;
+                    btn.innerText = `✅ 1 Koli Doldu (1 000 Kutu)`;
+                    btn.disabled = true;
+                    const qSec = document.getElementById('koli-quiz-section');
+                    if (qSec) {
+                        qSec.classList.add('visible');
+                        setTimeout(() => qSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+                    }
+                    showToast('🏆 Harika! 1 koli = 1 000 kutu! Şimdi 12 koli sorusunu cevapla!', 'ok');
+                }
+            }
+            drawKoliSVG();
+        }
+
+        function resetKoli() {
+            initAudio();
+            playSound('tick');
+            koliBaseRows = 0;
+            koliLayers = 0;
+            const btn = document.getElementById('btn-koli-fill');
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('teal');
+                btn.innerText = `📦 +10 Kutu (1. Sırayı Doldur)`;
+            }
+            const phaseEl = document.getElementById('koli-phase');
+            if (phaseEl) phaseEl.innerText = `1. Aşama: Taban Katını 10'arlı Doldur (0/10 Sıra)`;
+            const metricEl = document.getElementById('koli-metric');
+            if (metricEl) metricEl.innerText = `Kolideki Kutu: 0 / 1 000 (0 dm³)`;
+            const qSec = document.getElementById('koli-quiz-section');
+            if (qSec) qSec.classList.remove('visible');
+            drawKoliSVG();
+        }
+
+        // ==========================================
+        // SAYFA 146 (Soru 2): 3D İZOMETRİK KARE PRİZMA MODELİ
+        // ==========================================
+        function drawPrismSVG() {
+            const svgEl = document.getElementById('prism-svg');
+            if (!svgEl) return;
+
+            const ox = 186, oy = 160;
+            // Taban 0..4 (her birim = 5 cm -> 20 cm x 20 cm), y: 0..5 (her birim = 1 cm)
+            const proj = (x, y, z) => [
+                ox + (x - z) * 26,
+                oy + (x + z) * 12.5 - y * 24
+            ];
+            const pt = (x, y, z) => proj(x, y, z).map(v => v.toFixed(1)).join(',');
+
+            let svg = '';
+
+            // Zemin gölgesi
+            svg += `<polygon points="${pt(-0.2,0,-0.2)} ${pt(4.2,0,-0.2)} ${pt(4.2,0,4.2)} ${pt(-0.2,0,4.2)}" fill="rgba(15,23,42,0.14)"/>`;
+
+            // Kare prizmanın arka şeffaf duvarları (Hedef 5 cm yüksekliğe kadar)
+            svg += `<polygon points="${pt(0,0,0)} ${pt(4,0,0)} ${pt(4,5,0)} ${pt(0,5,0)}" fill="#f8fafc" fill-opacity="0.72" stroke="#64748b" stroke-width="1.4"/>`;
+            svg += `<polygon points="${pt(0,0,0)} ${pt(0,0,4)} ${pt(0,5,4)} ${pt(0,5,0)}" fill="#e2e8f0" fill-opacity="0.72" stroke="#64748b" stroke-width="1.4"/>`;
+
+            // Taban yüzeyi (20 cm x 20 cm = 400 cm²)
+            svg += `<polygon points="${pt(0,0,0)} ${pt(4,0,0)} ${pt(4,0,4)} ${pt(0,0,4)}" fill="#dbeafe" stroke="#2563eb" stroke-width="1.8"/>`;
+            // Taban ızgara çizgileri
+            for (let i = 1; i < 4; i++) {
+                svg += `<line x1="${proj(i,0,0)[0]}" y1="${proj(i,0,0)[1]}" x2="${proj(i,0,4)[0]}" y2="${proj(i,0,4)[1]}" stroke="#93c5fd" stroke-width="1"/>`;
+                svg += `<line x1="${proj(0,0,i)[0]}" y1="${proj(0,0,i)[1]}" x2="${proj(4,0,i)[0]}" y2="${proj(4,0,i)[1]}" stroke="#93c5fd" stroke-width="1"/>`;
+            }
+
+            // Taban boşken ortada 400 cm² etiketi
+            if (prismLayers === 0) {
+                const cTab = proj(2, 0, 2);
+                svg += `<text x="${cTab[0]}" y="${cTab[1]+4}" text-anchor="middle" font-size="13" font-weight="900" fill="#1d4ed8">Taban = 400 cm²</text>`;
+            }
+
+            // Eklenen 1 cm'lik katmanlar (Her biri 400 cm³)
+            const layerPalettes = [
+                { top: '#7dd3fc', left: '#38bdf8', right: '#0284c7' },
+                { top: '#6ee7b7', left: '#34d399', right: '#059669' },
+                { top: '#fde047', left: '#facc15', right: '#ca8a04' },
+                { top: '#fdba74', left: '#fb923c', right: '#ea580c' },
+                { top: '#c4b5fd', left: '#a78bfa', right: '#7c3aed' }
+            ];
+
+            for (let l = 0; l < prismLayers; l++) {
+                const pal = layerPalettes[l];
+                const y0 = l;
+                const y1 = l + 1;
+                // Sol-ön yüz (z = 4)
+                svg += `<polygon points="${pt(0,y1,4)} ${pt(4,y1,4)} ${pt(4,y0,4)} ${pt(0,y0,4)}" fill="${pal.left}" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round"/>`;
+                // Sağ-ön yüz (x = 4)
+                svg += `<polygon points="${pt(4,y1,4)} ${pt(4,y1,0)} ${pt(4,y0,0)} ${pt(4,y0,4)}" fill="${pal.right}" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round"/>`;
+                // Üst yüz (sadece en üstteki katmanda görünür, diğerlerinin üstü kapanır)
+                if (l === prismLayers - 1) {
+                    svg += `<polygon points="${pt(0,y1,0)} ${pt(4,y1,0)} ${pt(4,y1,4)} ${pt(0,y1,4)}" fill="${pal.top}" stroke="#0f172a" stroke-width="1.6" stroke-linejoin="round"/>`;
+                    for (let i = 1; i < 4; i++) {
+                        svg += `<line x1="${proj(i,y1,0)[0]}" y1="${proj(i,y1,0)[1]}" x2="${proj(i,y1,4)[0]}" y2="${proj(i,y1,4)[1]}" stroke="rgba(15,23,42,0.22)" stroke-width="0.9"/>`;
+                        svg += `<line x1="${proj(0,y1,i)[0]}" y1="${proj(0,y1,i)[1]}" x2="${proj(4,y1,i)[0]}" y2="${proj(4,y1,i)[1]}" stroke="rgba(15,23,42,0.22)" stroke-width="0.9"/>`;
+                    }
+                    const topCenter = proj(2, y1, 2);
+                    svg += `<text x="${topCenter[0]}" y="${topCenter[1]+4}" text-anchor="middle" font-size="12.5" font-weight="900" fill="#0f172a">${formatNumberTR(prismLayers * 400)} cm³${prismLayers === 5 ? ' = 2 dm³' : ''}</text>`;
+                }
+                // Her katmanın sol-ön yüzünde +400 cm³ etiketi
+                const faceL = proj(2, y0 + 0.5, 4);
+                svg += `<text x="${faceL[0]}" y="${faceL[1]+4}" text-anchor="middle" font-size="10.5" font-weight="900" fill="#0f172a">400 cm³</text>`;
+                // Sağ-ön yüzünde 1 cm işareti
+                const faceR = proj(4, y0 + 0.5, 2);
+                svg += `<text x="${faceR[0]}" y="${faceR[1]+4}" text-anchor="middle" font-size="10.5" font-weight="900" fill="#ffffff">${l + 1}. kat (1 cm)</text>`;
+            }
+
+            // Üst şeffaf tel kafes (hedef 5 cm yüksekliği gösterir)
+            svg += `<polyline points="${pt(0,5,0)} ${pt(4,5,0)} ${pt(4,5,4)} ${pt(0,5,4)} ${pt(0,5,0)}" fill="none" stroke="#1e293b" stroke-width="1.6" stroke-dasharray="4,3"/>`;
+            svg += `<line x1="${proj(4,0,4)[0]}" y1="${proj(4,0,4)[1]}" x2="${proj(4,5,4)[0]}" y2="${proj(4,5,4)[1]}" stroke="#1e293b" stroke-width="1.6" stroke-dasharray="4,3"/>`;
+            svg += `<line x1="${proj(0,0,4)[0]}" y1="${proj(0,0,4)[1]}" x2="${proj(0,5,4)[0]}" y2="${proj(0,5,4)[1]}" stroke="#1e293b" stroke-width="1.4" stroke-dasharray="4,3"/>`;
+            svg += `<line x1="${proj(4,0,0)[0]}" y1="${proj(4,0,0)[1]}" x2="${proj(4,5,0)[0]}" y2="${proj(4,5,0)[1]}" stroke="#1e293b" stroke-width="1.4" stroke-dasharray="4,3"/>`;
+
+            // Taban ayrıt ölçüleri (20 cm x 20 cm)
+            const lblA = proj(2, 0, 4.75);
+            const lblB = proj(4.85, 0, 2);
+            svg += `<text x="${lblA[0]}" y="${lblA[1]+4}" text-anchor="middle" font-size="13" font-weight="900" fill="#0f172a">20 cm</text>`;
+            svg += `<text x="${lblB[0]}" y="${lblB[1]+4}" text-anchor="middle" font-size="13" font-weight="900" fill="#0f172a">20 cm</text>`;
+
+            // Sol tarafta canlı yükseklik ölçüsü (h = ? cm)
+            const hBot = proj(-0.55, 0, 4);
+            const hTop = proj(-0.55, Math.max(0.15, prismLayers), 4);
+            const hMidY = (hBot[1] + hTop[1]) / 2;
+            if (prismLayers > 0) {
+                svg += `<line x1="${hBot[0]}" y1="${hBot[1]}" x2="${hTop[0]}" y2="${hTop[1]}" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>`;
+                svg += `<circle cx="${hTop[0]}" cy="${hTop[1]}" r="4" fill="#dc2626"/>`;
+                svg += `<circle cx="${hBot[0]}" cy="${hBot[1]}" r="4" fill="#dc2626"/>`;
+                svg += `<text x="${hBot[0] - 8}" y="${hMidY + 4}" text-anchor="end" font-size="13" font-weight="900" fill="#b91c1c">h = ${prismLayers} cm</text>`;
+            } else {
+                const hTargetTop = proj(-0.55, 5, 4);
+                svg += `<line x1="${hBot[0]}" y1="${hBot[1]}" x2="${hTargetTop[0]}" y2="${hTargetTop[1]}" stroke="#64748b" stroke-width="2" stroke-dasharray="4,3"/>`;
+                svg += `<text x="${hBot[0] - 8}" y="${(hBot[1] + hTargetTop[1]) / 2}" text-anchor="end" font-size="13" font-weight="900" fill="#475569">h = ? cm</text>`;
+            }
+
+            svgEl.innerHTML = svg;
+        }
+
+        function addPrismLayer() {
+            initAudio();
+            if (prismLayers >= 5) return;
+
+            prismLayers++;
+            const currentVol = prismLayers * 400;
+            const pct = (prismLayers / 5) * 100;
+
+            const btn = document.getElementById('btn-prism-add');
+            const phaseEl = document.getElementById('prism-phase');
+            const metricEl = document.getElementById('prism-metric');
+            const meterEl = document.getElementById('prism-meter');
+
+            if (meterEl) meterEl.style.width = `${pct}%`;
+            if (metricEl) metricEl.innerText = `Yükseklik: ${prismLayers} cm • Hacim: ${formatNumberTR(currentVol)} cm³`;
+
+            if (prismLayers < 5) {
+                playSound('stepUp');
+                launchConfetti('mini');
+                if (phaseEl) phaseEl.innerText = `🎯 Hedef: 2 000 cm³ (${formatNumberTR(2000 - currentVol)} cm³ kaldı)`;
+                if (btn) btn.innerText = `🧱 +1 cm Katman Ekle (${prismLayers + 1}. Kat • +400 cm³)`;
+            } else {
+                playSound('fanfare');
+                launchConfetti('big');
+                if (phaseEl) phaseEl.innerText = `✅ Tam 2 000 cm³ (2 dm³) Doldu! Yükseklik = 5 cm`;
+                if (btn) {
+                    btn.innerText = `✅ Prizma Doldu (5 cm = 2 dm³)`;
+                    btn.disabled = true;
+                }
+                const qSec = document.getElementById('prism-quiz-section');
+                if (qSec) {
+                    qSec.classList.add('visible');
+                    setTimeout(() => qSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+                }
+                showToast('🎉 Harika! 5 katman (5 cm) ile tam 2 000 cm³ = 2 dm³ oldu! Şimdi cevabı işaretle!', 'ok');
+            }
+            drawPrismSVG();
+        }
+
+        function resetPrism() {
+            initAudio();
+            playSound('tick');
+            prismLayers = 0;
+            const btn = document.getElementById('btn-prism-add');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = `🧱 +1 cm Katman Ekle (+400 cm³)`;
+            }
+            const phaseEl = document.getElementById('prism-phase');
+            if (phaseEl) phaseEl.innerText = `🎯 Hedef Hacim: 2 dm³ = 2 000 cm³`;
+            const metricEl = document.getElementById('prism-metric');
+            if (metricEl) metricEl.innerText = `Yükseklik: 0 cm • Hacim: 0 cm³`;
+            const meterEl = document.getElementById('prism-meter');
+            if (meterEl) meterEl.style.width = `0%`;
+            const qSec = document.getElementById('prism-quiz-section');
+            if (qSec) qSec.classList.remove('visible');
+            drawPrismSVG();
+        }
+
+        // ==========================================
+        // SAYFA 146 (Soru 3): KİTAPTAKİ AHŞAP SEBZE YATAĞI MODELİ
+        // ==========================================
+        function drawGardenSVG() {
+            const svgEl = document.getElementById('garden-svg');
+            if (!svgEl) return;
+
+            const fillRatio = gardenBags / 20; // 0 .. 1
+
+            // Kitaptaki perspektif ahşap sebze yatağı köşeleri (sola doğru uzanan dikdörtgen ahşap kasa)
+            // Üst dış çerçeve köşeleri: arka-sol (P0), arka-sağ (P1), ön-sağ (P2), ön-sol (P3)
+            const P0 = [32, 92];
+            const P1 = [196, 80];
+            const P2 = [312, 118];
+            const P3 = [148, 140];
+            const boxH = 52; // Kasa yüksekliği (40 cm = 4 dm)
+
+            // İç boşluk üst köşeleri (ahşap kenar kalınlığı içeride)
+            const I0 = [48, 95];
+            const I1 = [192, 85];
+            const I2 = [294, 116];
+            const I3 = [150, 134];
+
+            const innerDepth = 38;
+            const soilDrop = innerDepth * (1 - fillRatio); // 0 doluyken en üstte (3px boşluk), 38 boşken tabanda
+            const sOff = 5 + soilDrop * 0.85;
+
+            const S0 = [I0[0], I0[1] + sOff];
+            const S1 = [I1[0], I1[1] + sOff];
+            const S2 = [I2[0], I2[1] + sOff];
+            const S3 = [I3[0], I3[1] + sOff];
+
+            const pts = arr => arr.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+
+            let svg = '';
+
+            // 1) Zemin yumuşak gölgesi
+            svg += `<polygon points="${P0[0]-6},${P0[1]+boxH+4} ${P3[0]},${P3[1]+boxH+7} ${P2[0]+6},${P2[1]+boxH+4} ${P1[0]},${P1[1]+boxH+2}" fill="rgba(22, 101, 52, 0.16)"/>`;
+
+            // 2) Kasanın arka iç ahşap duvarları
+            svg += `<polygon points="${I0[0]},${I0[1]} ${I1[0]},${I1[1]} ${I1[0]},${I1[1]+innerDepth} ${I0[0]},${I0[1]+innerDepth}" fill="#b97a32" stroke="#854d0e" stroke-width="1.2"/>`;
+            svg += `<polygon points="${I1[0]},${I1[1]} ${I2[0]},${I2[1]} ${I2[0]},${I2[1]+innerDepth} ${I1[0]},${I1[1]+innerDepth}" fill="#a16207" stroke="#854d0e" stroke-width="1.2"/>`;
+
+            // 3) Kasa içi taban (boşken görünür)
+            svg += `<polygon points="${I0[0]},${I0[1]+innerDepth} ${I1[0]},${I1[1]+innerDepth} ${I2[0]},${I2[1]+innerDepth} ${I3[0]},${I3[1]+innerDepth}" fill="#925d22"/>`;
+
+            // 4) Doldukça yükselen TOPRAK katmanı
+            if (gardenBags > 0) {
+                // Toprak üst yüzeyi (koyu kahverengi zengin bahçe toprağı)
+                svg += `<polygon points="${pts([S0, S1, S2, S3])}" fill="#6b3e1e" stroke="#451a03" stroke-width="1.3"/>`;
+                // Toprak öndeki kesit yüksekliği
+                svg += `<polygon points="${S0[0]},${S0[1]} ${S3[0]},${S3[1]} ${I3[0]},${I3[1]+innerDepth} ${I0[0]},${I0[1]+innerDepth}" fill="#522e14"/>`;
+                svg += `<polygon points="${S3[0]},${S3[1]} ${S2[0]},${S2[1]} ${I2[0]},${I2[1]+innerDepth} ${I3[0]},${I3[1]+innerDepth}" fill="#452510"/>`;
+
+                // Toprak doku tümsekleri
+                const lumps = [
+                    [0.24, 0.35], [0.52, 0.28], [0.76, 0.42],
+                    [0.34, 0.65], [0.62, 0.68], [0.46, 0.50], [0.78, 0.72]
+                ];
+                lumps.forEach(([u, v]) => {
+                    const lx = (1 - u) * ((1 - v) * S0[0] + v * S3[0]) + u * ((1 - v) * S1[0] + v * S2[0]);
+                    const ly = (1 - u) * ((1 - v) * S0[1] + v * S3[1]) + u * ((1 - v) * S1[1] + v * S2[1]);
+                    svg += `<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="7" ry="2.6" fill="#4e2a11" opacity="0.65"/>`;
+                });
+            }
+
+            // 5) Kitaptaki resimdeki gibi yemyeşil sebze fideleri (yüzde 60+ olunca küçük filiz, %100 dolunca tam boy sebzeler!)
+            if (gardenBags >= 12) {
+                const fullGrown = (gardenBags === 20);
+                const scaleF = fullGrown ? 1.0 : 0.42;
+                const rows = [0.22, 0.52, 0.80];
+                const cols = [0.14, 0.32, 0.50, 0.68, 0.86];
+                rows.forEach((v, rIdx) => {
+                    cols.forEach((u, cIdx) => {
+                        const bx = (1 - u) * ((1 - v) * S0[0] + v * S3[0]) + u * ((1 - v) * S1[0] + v * S2[0]);
+                        const by = (1 - u) * ((1 - v) * S0[1] + v * S3[1]) + u * ((1 - v) * S1[1] + v * S2[1]);
+                        const hLeaf = (28 + ((rIdx + cIdx) % 3) * 7) * scaleF;
+                        const c1 = (rIdx + cIdx) % 2 === 0 ? '#2e7d32' : '#388e3c';
+                        const c2 = (rIdx + cIdx) % 2 === 0 ? '#43a047' : '#4caf50';
+                        svg += `<g class="sprout-group">`;
+                        // Sap
+                        svg += `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${(bx-3).toFixed(1)}" y2="${(by-hLeaf*0.65).toFixed(1)}" stroke="#1b5e20" stroke-width="2" stroke-linecap="round"/>`;
+                        svg += `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${(bx+4).toFixed(1)}" y2="${(by-hLeaf*0.72).toFixed(1)}" stroke="#1b5e20" stroke-width="2" stroke-linecap="round"/>`;
+                        // Sol yaprak
+                        svg += `<path d="M ${(bx-2).toFixed(1)},${(by-hLeaf*0.35).toFixed(1)} Q ${(bx-13*scaleF).toFixed(1)},${(by-hLeaf*0.75).toFixed(1)} ${(bx-5*scaleF).toFixed(1)},${(by-hLeaf).toFixed(1)} Q ${(bx+3*scaleF).toFixed(1)},${(by-hLeaf*0.7).toFixed(1)} ${(bx-2).toFixed(1)},${(by-hLeaf*0.35).toFixed(1)} Z" fill="${c1}" stroke="#14532d" stroke-width="0.9"/>`;
+                        // Sağ yaprak
+                        svg += `<path d="M ${(bx+2).toFixed(1)},${(by-hLeaf*0.3).toFixed(1)} Q ${(bx+14*scaleF).toFixed(1)},${(by-hLeaf*0.78).toFixed(1)} ${(bx+6*scaleF).toFixed(1)},${(by-hLeaf*1.05).toFixed(1)} Q ${(bx-2*scaleF).toFixed(1)},${(by-hLeaf*0.72).toFixed(1)} ${(bx+2).toFixed(1)},${(by-hLeaf*0.3).toFixed(1)} Z" fill="${c2}" stroke="#14532d" stroke-width="0.9"/>`;
+                        svg += `</g>`;
+                    });
+                });
+            }
+
+            // 6) Ahşap kasanın ön-sol yüzü (2 m uzun kenar, tahta çıtalar ve çivi noktalarıyla)
+            svg += `<polygon points="${P0[0]},${P0[1]} ${P3[0]},${P3[1]} ${P3[0]},${P3[1]+boxH} ${P0[0]},${P0[1]+boxH}" fill="#e6b05c" stroke="#a16207" stroke-width="2" stroke-linejoin="round"/>`;
+            // Yatay tahta çizgisi ve ahşap damarı
+            svg += `<line x1="${P0[0]}" y1="${P0[1]+boxH*0.5}" x2="${P3[0]}" y2="${P3[1]+boxH*0.5}" stroke="#b45309" stroke-width="1.6"/>`;
+            svg += `<path d="M ${P0[0]+22},${P0[1]+20} Q ${P0[0]+58},${P0[1]+30} ${P0[0]+92},${P0[1]+44}" fill="none" stroke="#c88a32" stroke-width="1.6" opacity="0.7"/>`;
+            svg += `<path d="M ${P0[0]+18},${P0[1]+38} Q ${P0[0]+64},${P0[1]+56} ${P0[0]+104},${P0[1]+68}" fill="none" stroke="#c88a32" stroke-width="1.5" opacity="0.65"/>`;
+
+            // 7) Ahşap kasanın ön-sağ yüzü (1,5 m genişlik kenarı, kitaptaki gibi alt ortada kavisli ayak oyuntusu!)
+            const rMidX = (P3[0] + P2[0]) / 2;
+            const rMidY = (P3[1] + P2[1]) / 2 + boxH;
+            svg += `<path d="M ${P3[0]},${P3[1]} L ${P2[0]},${P2[1]} L ${P2[0]},${P2[1]+boxH} L ${P2[0]-36},${P2[1]+boxH+5} Q ${rMidX},${rMidY-14} ${P3[0]+36},${P3[1]+boxH-5} L ${P3[0]},${P3[1]+boxH} Z" fill="#f3c677" stroke="#a16207" stroke-width="2" stroke-linejoin="round"/>`;
+            svg += `<line x1="${P3[0]}" y1="${P3[1]+boxH*0.5}" x2="${P2[0]}" y2="${P2[1]+boxH*0.5}" stroke="#b45309" stroke-width="1.6"/>`;
+            // Ahşap damar halkası
+            svg += `<ellipse cx="${rMidX+12}" cy="${P3[1]+6}" rx="18" ry="4" transform="rotate(-7 ${rMidX+12} ${P3[1]+6})" fill="none" stroke="#d49840" stroke-width="1.5"/>`;
+
+            // 8) Üst ahşap çerçeve kenarları (ön iki kenar üstten toprağı kavrar)
+            svg += `<polygon points="${P0[0]},${P0[1]} ${P3[0]},${P3[1]} ${I3[0]},${I3[1]} ${I0[0]},${I0[1]}" fill="#f7d594" stroke="#a16207" stroke-width="1.5"/>`;
+            svg += `<polygon points="${P3[0]},${P3[1]} ${P2[0]},${P2[1]} ${I2[0]},${I2[1]} ${I3[0]},${I3[1]}" fill="#fae0ad" stroke="#a16207" stroke-width="1.5"/>`;
+            svg += `<polygon points="${P0[0]},${P0[1]} ${P1[0]},${P1[1]} ${I1[0]},${I1[1]} ${I0[0]},${I0[1]}" fill="#f2c97d" stroke="#a16207" stroke-width="1.4"/>`;
+            svg += `<polygon points="${P1[0]},${P1[1]} ${P2[0]},${P2[1]} ${I2[0]},${I2[1]} ${I1[0]},${I1[1]}" fill="#e8b86d" stroke="#a16207" stroke-width="1.4"/>`;
+
+            // Köşe çivi noktaları (kitaptaki görseldeki gibi)
+            const nails = [
+                [P0[0]+7, P0[1]+13], [P0[0]+7, P0[1]+38],
+                [P3[0]-8, P3[1]+13], [P3[0]-8, P3[1]+38],
+                [P3[0]+8, P3[1]+13], [P3[0]+8, P3[1]+38],
+                [P2[0]-7, P2[1]+13], [P2[0]-7, P2[1]+38]
+            ];
+            nails.forEach(([nx, ny]) => {
+                svg += `<circle cx="${nx}" cy="${ny}" r="2.2" fill="#854d0e"/>`;
+            });
+
+            // 9) Toprak dökülme tanecik efekti (tıklama anında)
+            if (gardenJustPoured) {
+                const drops = [[164, 72], [176, 62], [186, 78], [156, 84], [172, 88], [192, 68]];
+                drops.forEach(([dx, dy]) => {
+                    svg += `<circle class="soil-drop-anim" cx="${dx}" cy="${dy}" r="4.2" fill="#6b3e1e" stroke="#451a03" stroke-width="0.8"/>`;
+                });
+            }
+
+            // 10) Ayrıt ölçü etiketleri (2 m, 1,5 m, 40 cm)
+            svg += `<text x="74" y="186" text-anchor="middle" font-size="12" font-weight="900" fill="#0f172a">2 m (20 dm)</text>`;
+            svg += `<text x="242" y="196" text-anchor="middle" font-size="12" font-weight="900" fill="#0f172a">1,5 m (15 dm)</text>`;
+            svg += `<text x="16" y="128" text-anchor="middle" font-size="11.5" font-weight="900" fill="#b91c1c" transform="rotate(-90 16 128)">40 cm</text>`;
+
+            svgEl.innerHTML = svg;
+        }
+
+        function pourSoilBag(count) {
+            initAudio();
+            if (gardenBags >= 20) return;
+
+            gardenBags = Math.min(20, gardenBags + count);
+            gardenJustPoured = true;
+
+            const bagBtn = document.getElementById('btn-soil-bag');
+            if (bagBtn) {
+                bagBtn.classList.remove('pouring');
+                void bagBtn.offsetWidth;
+                bagBtn.classList.add('pouring');
+            }
+
+            const currentVol = gardenBags * 60;
+            const pct = (gardenBags / 20) * 100;
+            const phaseEl = document.getElementById('garden-phase');
+            const metricEl = document.getElementById('garden-metric');
+            const meterEl = document.getElementById('garden-meter');
+            const btn5 = document.getElementById('btn-garden-5');
+
+            if (meterEl) meterEl.style.width = `${pct}%`;
+            if (metricEl) metricEl.innerText = `Dökülen: ${gardenBags} Paket • ${formatNumberTR(currentVol)} / 1 200 dm³`;
+
+            if (gardenBags < 20) {
+                playSound('tick');
+                launchConfetti('mini');
+                if (phaseEl) phaseEl.innerText = `🌱 Doluluk: %${Math.round(pct)} (${formatNumberTR(1200 - currentVol)} dm³ boşluk kaldı)`;
+            } else {
+                playSound('fanfare');
+                launchConfetti('big');
+                if (phaseEl) phaseEl.innerText = `✅ Sebze Yatağı Tamamen Doldu! (20 Paket = 1 200 dm³)`;
+                if (bagBtn) bagBtn.disabled = true;
+                if (btn5) btn5.disabled = true;
+                const qSec = document.getElementById('garden-quiz-section');
+                if (qSec) {
+                    qSec.classList.add('visible');
+                    setTimeout(() => qSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+                }
+                showToast('🌱 Harika! Tam 20 paket (1 200 dm³) ile sebze yatağı doldu ve sebzeler filizlendi!', 'ok');
+            }
+            drawGardenSVG();
+            setTimeout(() => { gardenJustPoured = false; }, 380);
+        }
+
+        function resetGarden() {
+            initAudio();
+            playSound('tick');
+            gardenBags = 0;
+            gardenJustPoured = false;
+            const bagBtn = document.getElementById('btn-soil-bag');
+            const btn5 = document.getElementById('btn-garden-5');
+            if (bagBtn) bagBtn.disabled = false;
+            if (btn5) btn5.disabled = false;
+            const phaseEl = document.getElementById('garden-phase');
+            if (phaseEl) phaseEl.innerText = `🎯 Hedef Hacim: 1 200 dm³ (Her paket 60 dm³)`;
+            const metricEl = document.getElementById('garden-metric');
+            if (metricEl) metricEl.innerText = `Dökülen: 0 Paket • 0 / 1 200 dm³`;
+            const meterEl = document.getElementById('garden-meter');
+            if (meterEl) meterEl.style.width = `0%`;
+            const qSec = document.getElementById('garden-quiz-section');
+            if (qSec) qSec.classList.remove('visible');
+            drawGardenSVG();
+        }
+
+        // ==========================================
+        // SAYFA 146: ORİJİNAL 3D KİTAP HACİM MERDİVENİ MOTORU
+        // ==========================================
+        function renderLadderUI(st) {
+            const stage = document.getElementById('ladder-stage');
+            const reached = (ladderCurrentIdx === st.targetIdx);
+
+            // Kitaptaki 4 basamağın orijinal renk paleti (Üst, Sol, Sağ yüz)
+            const palette = [
+                { top: '#a7dcf2', left: '#6bc4e8', right: '#4fb0db', name: 'Metreküp', unit: '(m³)' },
+                { top: '#a3d165', left: '#7eb63c', right: '#639b25', name: 'Desimetreküp', unit: '(dm³)' },
+                { top: '#ffe45c', left: '#f5c710', right: '#dda900', name: 'Santimetreküp', unit: '(cm³)' },
+                { top: '#f7a552', left: '#e67817', right: '#c95c08', name: 'Milimetreküp', unit: '(mm³)' }
+            ];
+
+            // İzometrik blok ölçüleri (kitaptaki gibi üst bloğun alt kenarı alt bloğun üst kenarına tam oturur)
+            const rx = 56, ry = 27, bh = 31;
+            const startX = 114, startY = 54;
+            const centers = [0, 1, 2, 3].map(i => ({
+                cx: startX + i * rx,
+                cy: startY + i * (ry + bh)
+            }));
+
+            let svg = `<svg class="ladder-svg" viewBox="0 0 404 316" xmlns="http://www.w3.org/2000/svg">`;
+
+            // 1) 4 ADET 3D İZOMETRİK BASAMAK (Arkadan öne doğru 0 -> 3 çizilir)
+            for (let i = 0; i < 4; i++) {
+                const { cx, cy } = centers[i];
+                const pal = palette[i];
+                const isCur = (i === ladderCurrentIdx);
+                const isTarget = (i === st.targetIdx);
+                const isVisited = ladderVisited.includes(i);
+
+                const pTop = `${cx},${cy - ry}`;
+                const pRight = `${cx + rx},${cy}`;
+                const pBot = `${cx},${cy + ry}`;
+                const pLeft = `${cx - rx},${cy}`;
+                const pLeftB = `${cx - rx},${cy + bh}`;
+                const pBotB = `${cx},${cy + ry + bh}`;
+                const pRightB = `${cx + rx},${cy + bh}`;
+
+                let stepCls = 'iso-step ';
+                if (isCur && reached) stepCls += 'lit-reached';
+                else if (isCur) stepCls += 'lit';
+                else if (isVisited) stepCls += 'visited';
+                else stepCls += 'dimmed';
+
+                const strokeColor = isCur ? '#ffffff' : '#111827';
+                const strokeW = isCur ? '2.6' : '2';
+
+                svg += `<g class="${stepCls}" onclick="clickLadderStep(${i})">`;
+                // Sol ön yüz
+                svg += `<polygon points="${pLeft} ${pBot} ${pBotB} ${pLeftB}" fill="${pal.left}" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-linejoin="round"/>`;
+                // Sağ ön yüz
+                svg += `<polygon points="${pBot} ${pRight} ${pRightB} ${pBotB}" fill="${pal.right}" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-linejoin="round"/>`;
+                // Üst yüz
+                svg += `<polygon points="${pTop} ${pRight} ${pBot} ${pLeft}" fill="${pal.top}" stroke="${strokeColor}" stroke-width="${strokeW}" stroke-linejoin="round"/>`;
+
+                // Yeni gidilen basamak parıltı flaşı
+                if (i === ladderJustLitIdx) {
+                    svg += `<polygon class="iso-step-highlight" points="${pTop} ${pRight} ${pBot} ${pLeft}" fill="#ffffff"/>`;
+                }
+
+                // Hedef basamak vurgusu (henüz ulaşılmadıysa kesikli çerçeve)
+                if (isTarget && !reached) {
+                    svg += `<polygon class="iso-target-ring" points="${pTop} ${pRight} ${pBot} ${pLeft}"/>`;
+                }
+
+                // Basamak üstündeki yazı (kitaptaki orijinal yerleşim)
+                svg += `<text x="${cx}" y="${cy - 3}" text-anchor="middle" font-size="11.5" font-weight="900" fill="#111827">${pal.name}</text>`;
+                svg += `<text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="11.5" font-weight="900" fill="#111827">${pal.unit}</text>`;
+
+                // Mevcut konum veya hedef mini rozeti
+                if (isCur && reached) {
+                    svg += `<rect x="${cx - 32}" y="${cy - ry - 20}" width="64" height="17" rx="8" fill="#15803d" stroke="#ffffff" stroke-width="1.5"/>`;
+                    svg += `<text x="${cx}" y="${cy - ry - 8}" text-anchor="middle" font-size="10" font-weight="900" fill="#ffffff">🎉 HEDEF!</text>`;
+                } else if (isCur) {
+                    svg += `<rect x="${cx - 34}" y="${cy - ry - 20}" width="68" height="17" rx="8" fill="#0f172a" stroke="#fde047" stroke-width="1.5"/>`;
+                    svg += `<text x="${cx}" y="${cy - ry - 8}" text-anchor="middle" font-size="9.5" font-weight="900" fill="#fde047">✨ BURADA</text>`;
+                } else if (isTarget) {
+                    svg += `<rect x="${cx - 28}" y="${cy - ry - 18}" width="56" height="16" rx="8" fill="#e11d48" stroke="#ffffff" stroke-width="1.3"/>`;
+                    svg += `<text x="${cx}" y="${cy - ry - 7}" text-anchor="middle" font-size="9.5" font-weight="900" fill="#ffffff">🎯 HEDEF</text>`;
+                }
+
+                svg += `</g>`;
+            }
+
+            // 2) SAĞ ÜSTTEKİ KAVİSLİ KIRMIZI "× 1000" OKLARI (İniş: 0->1, 1->2, 2->3)
+            for (let e = 0; e < 3; e++) {
+                const { cx, cy } = centers[e];
+                const x1 = cx + 44, y1 = cy - 16;
+                const qx = cx + 96, qy = cy - 6;
+                const x2 = cx + 98, y2 = cy + 36;
+
+                const isAnim = ladderLastArrow && ladderLastArrow.dir === 1 && ladderLastArrow.edgeIdx === e;
+                const isTraveled = ladderTraveledArrows.some(a => a.dir === 1 && a.edgeIdx === e);
+                const grpCls = `iso-arrow-group down-arrow ${isAnim ? 'anim-active' : (isTraveled ? 'traveled' : 'idle')}`;
+
+                svg += `<g class="${grpCls}">`;
+                svg += `<path class="iso-arrow-path ${isAnim ? 'animate-draw' : ''}" d="M ${x1} ${y1} Q ${qx} ${qy} ${x2} ${y2}" fill="none" stroke="#dc2626" stroke-width="${isAnim || isTraveled ? 3.5 : 2.6}" stroke-linecap="round"/>`;
+                // Aşağı yönlü kırmızı ok ucu
+                svg += `<polygon class="iso-arrow-head ${isAnim ? 'animate-pop' : ''}" points="${x2},${y2 + 6} ${x2 - 7},${y2 - 7} ${x2 + 6},${y2 - 6}" fill="#dc2626"/>`;
+                // × 1000 etiketi
+                svg += `<text class="iso-arrow-label ${isAnim ? 'animate-pop' : ''}" x="${qx + 22}" y="${qy + 16}" text-anchor="middle" font-size="${isAnim ? 13.5 : 12}" font-weight="900" fill="${isAnim || isTraveled ? '#b91c1c' : '#334155'}">× 1000</text>`;
+                svg += `</g>`;
+            }
+
+            // 3) SOL ALTTAKİ KAVİSLİ MAVİ ": 1000" OKLARI (Çıkış: 1->0, 2->1, 3->2)
+            for (let e = 0; e < 3; e++) {
+                const { cx, cy } = centers[e];
+                const x1 = cx + 22, y1 = cy + 114;
+                const qx = cx - 30, qy = cy + 104;
+                const x2 = cx - 34, y2 = cy + 62;
+
+                const isAnim = ladderLastArrow && ladderLastArrow.dir === -1 && ladderLastArrow.edgeIdx === e;
+                const isTraveled = ladderTraveledArrows.some(a => a.dir === -1 && a.edgeIdx === e);
+                const grpCls = `iso-arrow-group up-arrow ${isAnim ? 'anim-active' : (isTraveled ? 'traveled' : 'idle')}`;
+
+                svg += `<g class="${grpCls}">`;
+                svg += `<path class="iso-arrow-path ${isAnim ? 'animate-draw' : ''}" d="M ${x1} ${y1} Q ${qx} ${qy} ${x2} ${y2}" fill="none" stroke="#2563eb" stroke-width="${isAnim || isTraveled ? 3.5 : 2.6}" stroke-linecap="round"/>`;
+                // Yukarı yönlü mavi ok ucu
+                svg += `<polygon class="iso-arrow-head ${isAnim ? 'animate-pop' : ''}" points="${x2},${y2 - 6} ${x2 - 6},${y2 + 7} ${x2 + 7},${y2 + 6}" fill="#2563eb"/>`;
+                // : 1000 etiketi
+                svg += `<text class="iso-arrow-label ${isAnim ? 'animate-pop' : ''}" x="${qx - 24}" y="${qy + 4}" text-anchor="middle" font-size="${isAnim ? 13.5 : 12}" font-weight="900" fill="${isAnim || isTraveled ? '#1d4ed8' : '#334155'}">: 1000</text>`;
+                svg += `</g>`;
+            }
+
+            svg += `</svg>`;
+            stage.innerHTML = svg;
+
+            const liveEl = document.getElementById('conv-live');
+            liveEl.innerText = `${formatNumberTR(ladderCurrentVal)} ${UNITS[ladderCurrentIdx]}`;
+            liveEl.classList.toggle('reached', reached);
+
+            document.getElementById('btn-ld-down').disabled = (ladderCurrentIdx >= 3 || reached);
+            document.getElementById('btn-ld-up').disabled = (ladderCurrentIdx <= 0 || reached);
+        }
+
+        function clickLadderStep(clickedIdx) {
+            if (clickedIdx === ladderCurrentIdx + 1) moveLadder(1);
+            else if (clickedIdx === ladderCurrentIdx - 1) moveLadder(-1);
+        }
+
+        function moveLadder(dir) {
+            initAudio();
+            const st = STEPS[currentIdx];
+            if (ladderCurrentIdx === st.targetIdx) return;
+
+            const nextIdx = ladderCurrentIdx + dir;
+            if (nextIdx < 0 || nextIdx > 3) return;
+
+            // Doğru yönde mi gidiyor?
+            const neededDir = st.targetIdx > ladderCurrentIdx ? 1 : -1;
+            if (dir !== neededDir) {
+                playSound('wrong');
+                showToast(neededDir === 1
+                    ? '⬇️ Hedef daha AŞAĞIDA! Aşağı inip 1000 ile çarpmalısın.'
+                    : '⬆️ Hedef daha YUKARIDA! Yukarı çıkıp 1000\'e bölmelisin.', 'err');
+                return;
+            }
+
+            const edgeIdx = dir === 1 ? ladderCurrentIdx : nextIdx;
+            ladderCurrentIdx = nextIdx;
+            ladderJustLitIdx = nextIdx;
+            if (!ladderVisited.includes(nextIdx)) ladderVisited.push(nextIdx);
+            ladderLastArrow = { dir, edgeIdx };
+            ladderTraveledArrows.push({ dir, edgeIdx });
+
+            if (dir === 1) {
+                ladderCurrentVal = ladderCurrentVal * 1000;
+                playSound('stepDown');
+            } else {
+                ladderCurrentVal = ladderCurrentVal / 1000;
+                playSound('stepUp');
+            }
+            launchConfetti('mini');
+            renderLadderUI(st);
+
+            if (ladderCurrentIdx === st.targetIdx) {
+                markStepDone(st.note);
+            }
+        }
+
+        // ==========================================
+        // ORTAK QUİZ & TAMAMLANMA KONTROLÜ
+        // ==========================================
+        function renderQuizOptions(opts, correctKey, noteText) {
+            const box = document.getElementById('quiz-opts');
+            box.innerHTML = '';
+            opts.forEach(o => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn';
+                btn.innerHTML = `<span class="opt-key">${o.k}</span><span>${o.t}</span>`;
+                btn.onclick = () => {
+                    initAudio();
+                    if (stepSolved[currentIdx]) return;
+                    if (o.k === correctKey) {
+                        btn.classList.add('correct');
+                        box.querySelectorAll('.opt-btn').forEach(b => { if (b !== btn) b.style.opacity = '0.5'; });
+                        markStepDone(noteText);
+                    } else {
+                        playSound('wrong');
+                        btn.classList.add('wrong');
+                        setTimeout(() => btn.classList.remove('wrong'), 400);
+                        showToast('✖ Bir kez daha düşünelim!', 'err');
+                    }
+                };
+                box.appendChild(btn);
+            });
+        }
+
+        function markStepDone(noteText) {
+            if (!stepSolved[currentIdx]) {
+                stepSolved[currentIdx] = true;
+                score += 50;
+            }
+            currentModalNote = noteText;
+            playSound('fanfare');
+            launchConfetti('big');
+            updateHUD();
+
+            const bar = document.getElementById('post-bar');
+            if (bar) {
+                const isLast = (currentIdx === STEPS.length - 1);
+                bar.innerHTML = `
+                    <button class="btn-action" onclick="openInfoModal()">💡 Bilgi Kutusunu Aç</button>
+                    <button class="btn-action purple" onclick="nextStep()">${isLast ? '🏆 Atölyeyi Bitir' : 'Sonraki Soru ➡️'}</button>
+                `;
+                bar.classList.add('visible');
+            }
+        }
+
+        function openInfoModal() {
+            playSound('tick');
+            document.getElementById('info-modal-text').innerHTML = currentModalNote;
+            const isLast = (currentIdx === STEPS.length - 1);
+            document.getElementById('info-modal-next').innerText = isLast ? '🏆 Atölyeyi Bitir' : 'Sonraki Soru ➡️';
+            document.getElementById('info-modal').classList.add('open');
+        }
+
+        function closeInfoModal() {
+            playSound('tick');
+            document.getElementById('info-modal').classList.remove('open');
+        }
+
+        function showFinalCelebration() {
+            playSound('fanfare');
+            launchConfetti('big');
+            document.getElementById('info-modal-text').innerHTML = `
+                <b>Tebrikler! 🏆</b><br><br>
+                Sayfa 144, 145 ve 146'daki tüm <b>Hacim Ölçme Birimleri</b> etkinliklerini ve problemlerini başarıyla tamamladın!<br><br>
+                Toplam Puanın: <b>${score} ⭐</b>
+            `;
+            const nextBtn = document.getElementById('info-modal-next');
+            nextBtn.innerText = '🔄 Baştan Oyna';
+            nextBtn.onclick = () => {
+                closeInfoModal();
+                score = 0;
+                stepSolved = Array(STEPS.length).fill(false);
+                nextBtn.onclick = () => { closeInfoModal(); nextStep(); };
+                jumpToStep(0);
+            };
+            document.getElementById('info-modal').classList.add('open');
+        }
+
+        // ==========================================
+        // TOAST & BOLCA KONFETİ
+        // ==========================================
+        let toastTimer = null;
+        function showToast(msg, type = '') {
+            const el = document.getElementById('toast');
+            el.innerText = msg;
+            el.className = 'show' + (type ? ' ' + type : '');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        const cCanvas = document.getElementById('confetti-canvas');
+        const cCtx = cCanvas.getContext('2d');
+        let confetti = [];
+        let animId = null;
+
+        function launchConfetti(size) {
+            cCanvas.width = window.innerWidth;
+            cCanvas.height = window.innerHeight;
+            const colors = ['#38bdf8', '#4ade80', '#facc15', '#fb923c', '#a855f7', '#ec4899'];
+            const count = size === 'big' ? 110 : 26;
+            for (let i = 0; i < count; i++) {
+                confetti.push({
+                    x: cCanvas.width * (size === 'big' ? (0.2 + Math.random() * 0.6) : 0.5),
+                    y: cCanvas.height * 0.45,
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: -(Math.random() * 14 + 5),
+                    r: Math.random() * 5.5 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 1
+                });
+            }
+            if (!animId) animateConfetti();
+        }
+
+        function animateConfetti() {
+            cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+            confetti = confetti.filter(p => p.life > 0);
+            confetti.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.44;
+                p.life -= 0.017;
+                cCtx.globalAlpha = Math.max(0, p.life);
+                cCtx.fillStyle = p.color;
+                cCtx.fillRect(p.x, p.y, p.r * 1.5, p.r);
+            });
+            cCtx.globalAlpha = 1;
+            if (confetti.length > 0) animId = requestAnimationFrame(animateConfetti);
+            else { cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height); animId = null; }
+        }
+
+        window.onload = function () {
+            renderStep();
+        };
+    </script>
+</body>
+</html>
